@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="fc:frame" content="vNext">
+    <meta name="base:app_id" content="">
+    <title>Ball Run</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game">
+        <canvas id="gameCanvas"></canvas>
+        <div id="ui">
+            <div id="level">LEVEL 1</div>
+            <div id="balls">🔵 10</div>
+        </div>
+        <div id="gameOver" class="hidden">
+            <div class="game-over-content">
+                <h1>GAME OVER</h1>
+                <p id="finalLevel">Level: 1</p>
+                <button id="retryBtn">RETRY</button>
+                <button id="shareBtn">SHARE</button>
+            </div>
+        </div>
+        <div id="bossAlert" class="hidden">
+            <div class="boss-text">⚠️ BOSS INCOMING ⚠️</div>
+        </div>
+    </div>
+    <script type="module" src="game.js"></script>
+</body>
+</html>
