@@ -610,6 +610,12 @@ function drawActiveSkills() {
 function drawAttackBalls() {
     const bulletStyle = getBulletStyle();
     const multiplier = getDamageMultiplier();
+    const extremeMode = gameState.bossNumber >= 5;
+    
+    // Limit attack balls for performance
+    if (gameState.attackBalls.length > (extremeMode ? 30 : 50)) {
+        gameState.attackBalls = gameState.attackBalls.slice(-(extremeMode ? 30 : 50));
+    }
     
     gameState.attackBalls = gameState.attackBalls.filter(ball => {
         const dx = canvasWidth / 2 - ball.x;
@@ -622,7 +628,8 @@ function drawAttackBalls() {
             gameState.bossHealth -= damage;
             
             const particleColor = damage >= 10 ? '255, 0, 255' : damage >= 5 ? '255, 170, 0' : '255, 100, 50';
-            createParticles(ball.x, ball.y, particleColor, Math.min(damage + 5, 20));
+            const particleCount = extremeMode ? Math.min(damage + 2, 10) : Math.min(damage + 5, 20);
+            createParticles(ball.x, ball.y, particleColor, particleCount);
             
             if (gameState.bossHealth <= 0) {
                 gameState.bossHealth = 0;
@@ -890,15 +897,24 @@ function drawBoss() {
     ctx.font = 'bold 10px Arial';
     ctx.fillText(`Boss ${gameState.bossNumber}/${FINAL_BOSS_NUMBER}`, centerX, 95);
     
-    // Boss aura
-    const auraGradient = ctx.createRadialGradient(centerX, bossY, 0, centerX, bossY, size * 2);
-    auraGradient.addColorStop(0, boss.attackColor);
-    auraGradient.addColorStop(0.5, boss.color + '33');
-    auraGradient.addColorStop(1, 'transparent');
-    ctx.fillStyle = auraGradient;
-    ctx.beginPath();
-    ctx.arc(centerX, bossY, size * 2, 0, Math.PI * 2);
-    ctx.fill();
+    // Boss aura - simplified for high boss numbers (skull boss and beyond)
+    if (gameState.bossNumber < 5) {
+        // Full aura for early bosses
+        const auraGradient = ctx.createRadialGradient(centerX, bossY, 0, centerX, bossY, size * 2);
+        auraGradient.addColorStop(0, boss.attackColor);
+        auraGradient.addColorStop(0.5, boss.color + '33');
+        auraGradient.addColorStop(1, 'transparent');
+        ctx.fillStyle = auraGradient;
+        ctx.beginPath();
+        ctx.arc(centerX, bossY, size * 2, 0, Math.PI * 2);
+        ctx.fill();
+    } else {
+        // Simplified aura for skull boss and beyond (performance)
+        ctx.fillStyle = boss.attackColor + '22';
+        ctx.beginPath();
+        ctx.arc(centerX, bossY, size * 1.5, 0, Math.PI * 2);
+        ctx.fill();
+    }
     
     // Emoji boss as HTML overlay (for Apple compatibility)
     // Pozisyonu game container'a göre hesapla
@@ -941,9 +957,17 @@ function bossAttack() {
     gameState.lastBossAttack = now;
     
     const boss = gameState.bossType;
-    const projectileCount = 3 + Math.floor(gameState.bossNumber / 2);
+    // Reduce projectile count for skull boss and beyond
+    const baseCount = gameState.bossNumber >= 5 ? 2 : 3;
+    const projectileCount = gameState.bossNumber >= 5 
+        ? baseCount + Math.floor(gameState.bossNumber / 3) // Slower growth
+        : baseCount + Math.floor(gameState.bossNumber / 2);
     
-    for (let i = 0; i < projectileCount; i++) {
+    // Limit max projectiles
+    const maxProjectiles = gameState.bossNumber >= 5 ? 6 : 8;
+    const finalCount = Math.min(projectileCount, maxProjectiles);
+    
+    for (let i = 0; i < finalCount; i++) {
         const angle = (Math.PI * 0.3) + (Math.PI * 0.4 * i / Math.max(1, projectileCount - 1));
         const speed = 3.5 + gameState.bossNumber * 0.3;
         
@@ -959,13 +983,21 @@ function bossAttack() {
         });
     }
     
-    createParticles(canvasWidth / 2, gameState.bossY + gameState.bossSize, '255, 100, 100', 10);
+    // Reduce particles for high boss numbers
+    const particleCount = gameState.bossNumber >= 5 ? 5 : 10;
+    createParticles(canvasWidth / 2, gameState.bossY + gameState.bossSize, '255, 100, 100', particleCount);
 }
 
 function drawBossProjectiles() {
     const hasShield = gameState.activeSkills.shield && Date.now() < gameState.activeSkills.shield;
     const playerY = canvasHeight - 100;
     const playerX = canvasWidth / 2 + gameState.playerSide * (canvasWidth / 4);
+    const extremeMode = gameState.bossNumber >= 5;
+    
+    // Limit projectiles for performance
+    if (gameState.bossProjectiles.length > (extremeMode ? 15 : 25)) {
+        gameState.bossProjectiles = gameState.bossProjectiles.slice(-(extremeMode ? 15 : 25));
+    }
     
     gameState.bossProjectiles = gameState.bossProjectiles.filter(proj => {
         proj.x += proj.vx;
@@ -985,7 +1017,7 @@ function drawBossProjectiles() {
             if (gameState.balls < 0) gameState.balls = 0;
             syncPlayerBalls();
             updateUI();
-            createParticles(proj.x, proj.y, '255, 100, 100', 12);
+            createParticles(proj.x, proj.y, '255, 100, 100', extremeMode ? 6 : 12);
             
             if (gameState.balls <= 0) endGame();
             return false;
@@ -997,19 +1029,22 @@ function drawBossProjectiles() {
         
         ctx.fillStyle = proj.color;
         ctx.shadowColor = proj.color;
-        ctx.shadowBlur = 15;
+        ctx.shadowBlur = extremeMode ? 10 : 15; // Reduced shadow for performance
         ctx.beginPath();
         ctx.arc(0, 0, proj.radius, 0, Math.PI * 2);
         ctx.fill();
         
-        ctx.strokeStyle = '#ffffff88';
-        ctx.lineWidth = 2;
-        for (let i = 0; i < 6; i++) {
-            const spikeAngle = (i / 6) * Math.PI * 2;
-            ctx.beginPath();
-            ctx.moveTo(Math.cos(spikeAngle) * proj.radius * 0.5, Math.sin(spikeAngle) * proj.radius * 0.5);
-            ctx.lineTo(Math.cos(spikeAngle) * proj.radius * 1.2, Math.sin(spikeAngle) * proj.radius * 1.2);
-            ctx.stroke();
+        // Simplified spikes for extreme mode
+        if (!extremeMode) {
+            ctx.strokeStyle = '#ffffff88';
+            ctx.lineWidth = 2;
+            for (let i = 0; i < 6; i++) {
+                const spikeAngle = (i / 6) * Math.PI * 2;
+                ctx.beginPath();
+                ctx.moveTo(Math.cos(spikeAngle) * proj.radius * 0.5, Math.sin(spikeAngle) * proj.radius * 0.5);
+                ctx.lineTo(Math.cos(spikeAngle) * proj.radius * 1.2, Math.sin(spikeAngle) * proj.radius * 1.2);
+                ctx.stroke();
+            }
         }
         ctx.shadowBlur = 0;
         ctx.restore();
@@ -1196,15 +1231,18 @@ function drawParticles() {
     }
     
     // Reduce particle count based on boss number for better performance
+    // Skull boss (5+) gets even more aggressive optimization
     const performanceMode = gameState.bossNumber > 3;
-    const maxParticlesForBoss = performanceMode ? MAX_PARTICLES * 0.6 : MAX_PARTICLES;
+    const extremeMode = gameState.bossNumber >= 5; // Skull boss and beyond
+    const maxParticlesForBoss = extremeMode ? MAX_PARTICLES * 0.4 : (performanceMode ? MAX_PARTICLES * 0.6 : MAX_PARTICLES);
     
     if (gameState.particles.length > maxParticlesForBoss) {
         gameState.particles = gameState.particles.slice(-maxParticlesForBoss);
     }
     
     // Batch particle updates and rendering for better performance
-    const performanceModeDecay = performanceMode ? 0.03 : 0.02;
+    const extremeMode = gameState.bossNumber >= 5;
+    const performanceModeDecay = extremeMode ? 0.04 : (performanceMode ? 0.03 : 0.02);
     const visibleParticles = [];
     
     // Update and filter particles in one pass
@@ -1237,8 +1275,9 @@ function drawParticles() {
 function createParticles(x, y, color, count = 10) {
     // Reduce particle count based on boss number for performance
     const performanceMode = gameState.bossNumber > 3;
-    const adjustedCount = performanceMode ? Math.floor(count * 0.5) : count;
-    const finalCount = Math.min(adjustedCount, 30); // Max 30 particles per call
+    const extremeMode = gameState.bossNumber >= 5; // Skull boss and beyond
+    const adjustedCount = extremeMode ? Math.floor(count * 0.3) : (performanceMode ? Math.floor(count * 0.5) : count);
+    const finalCount = extremeMode ? Math.min(adjustedCount, 15) : Math.min(adjustedCount, 30); // Max 15 for extreme mode
     
     for (let i = 0; i < finalCount; i++) {
         gameState.particles.push({
