@@ -20,6 +20,14 @@ const API_BASE_URL = window.location.origin;
 
 const MAX_VISUAL_BALLS = 40;
 const FINAL_BOSS_NUMBER = 10;
+const MAX_PARTICLES = 100; // Reduced for better performance
+
+// Performance optimizations - cached values
+let cachedGradient = null;
+let cachedGridOffset = 0;
+let lastFrameTime = 0;
+const TARGET_FPS = 60;
+const FRAME_TIME = 1000 / TARGET_FPS;
 
 const BOSS_HEALTH = [100, 200, 350, 500, 750, 1000, 1500, 2000, 3000, 5000];
 
@@ -249,42 +257,49 @@ function updateUI() {
 }
 
 function drawBackground() {
+    // Fill background
     ctx.fillStyle = '#0a0a12';
     ctx.fillRect(0, 0, canvasWidth, canvasHeight);
     
+    // Cache gradient to avoid recreating every frame
+    if (!cachedGradient) {
+        cachedGradient = ctx.createLinearGradient(0, 0, 0, canvasHeight);
+        cachedGradient.addColorStop(0, 'rgba(0, 255, 255, 0.8)');
+        cachedGradient.addColorStop(1, 'rgba(191, 0, 255, 0.8)');
+    }
+    
+    // Optimize grid drawing - only draw visible lines
     ctx.strokeStyle = 'rgba(0, 255, 255, 0.08)';
     ctx.lineWidth = 1;
-    
     const gridSize = 40;
     const offset = (gameState.distance * 0.5) % gridSize;
     
+    // Batch horizontal lines
+    ctx.beginPath();
     for (let y = offset; y < canvasHeight; y += gridSize) {
-        ctx.beginPath();
         ctx.moveTo(0, y);
         ctx.lineTo(canvasWidth, y);
-        ctx.stroke();
     }
+    ctx.stroke();
     
+    // Batch vertical lines
+    ctx.beginPath();
     for (let x = 0; x < canvasWidth; x += gridSize) {
-        ctx.beginPath();
         ctx.moveTo(x, 0);
         ctx.lineTo(x, canvasHeight);
-        ctx.stroke();
     }
+    ctx.stroke();
     
-    const gradient = ctx.createLinearGradient(0, 0, 0, canvasHeight);
-    gradient.addColorStop(0, 'rgba(0, 255, 255, 0.8)');
-    gradient.addColorStop(1, 'rgba(191, 0, 255, 0.8)');
-    
-    ctx.strokeStyle = gradient;
+    // Side borders with cached gradient
+    ctx.strokeStyle = cachedGradient;
     ctx.lineWidth = 4;
     ctx.shadowColor = '#00ffff';
     ctx.shadowBlur = 15;
+    
+    // Batch border drawing
     ctx.beginPath();
     ctx.moveTo(2, 0);
     ctx.lineTo(2, canvasHeight);
-    ctx.stroke();
-    ctx.beginPath();
     ctx.moveTo(canvasWidth - 2, 0);
     ctx.lineTo(canvasWidth - 2, canvasHeight);
     ctx.stroke();
@@ -305,19 +320,27 @@ function drawBossCounter() {
 }
 
 function drawGates() {
+    const gateWidth = canvasWidth / 2 - 15;
+    const dividerX = canvasWidth / 2 - 3;
+    const dividerWidth = 6;
+    
+    // Batch divider rendering
+    ctx.fillStyle = '#bf00ff';
+    ctx.shadowColor = '#bf00ff';
+    ctx.shadowBlur = 15;
+    
     gameState.gates.forEach(gate => {
+        // Only draw visible gates
         if (gate.y > canvasHeight + 50 || gate.y + gate.height < -50) return;
         
-        const gateWidth = canvasWidth / 2 - 15;
         drawGate(10, gate.y, gateWidth, gate.height, gate.leftOp);
         drawGate(canvasWidth / 2 + 5, gate.y, gateWidth, gate.height, gate.rightOp);
         
-        ctx.fillStyle = '#bf00ff';
-        ctx.shadowColor = '#bf00ff';
-        ctx.shadowBlur = 15;
-        ctx.fillRect(canvasWidth / 2 - 3, gate.y, 6, gate.height);
-        ctx.shadowBlur = 0;
+        // Draw divider
+        ctx.fillRect(dividerX, gate.y, dividerWidth, gate.height);
     });
+    
+    ctx.shadowBlur = 0;
 }
 
 function drawGate(x, y, width, height, op) {
@@ -794,33 +817,33 @@ function activateSkill(skill) {
     switch(skill.id) {
         case 'x10_damage':
             gameState.activeSkills.x10_damage = Date.now() + skill.duration;
-            createParticles(centerX, canvasHeight - 100, '255, 0, 255', 40);
+            createParticles(centerX, canvasHeight - 100, '255, 0, 255', gameState.bossNumber > 3 ? 20 : 30);
             break;
         case 'x5_damage':
             gameState.activeSkills.x5_damage = Date.now() + skill.duration;
-            createParticles(centerX, canvasHeight - 100, '255, 170, 0', 35);
+            createParticles(centerX, canvasHeight - 100, '255, 170, 0', gameState.bossNumber > 3 ? 18 : 25);
             break;
         case 'x3_damage':
             gameState.activeSkills.x3_damage = Date.now() + skill.duration;
-            createParticles(centerX, canvasHeight - 100, '255, 220, 0', 30);
+            createParticles(centerX, canvasHeight - 100, '255, 220, 0', gameState.bossNumber > 3 ? 15 : 20);
             break;
         case 'shield':
             gameState.activeSkills.shield = Date.now() + skill.duration;
-            createParticles(centerX, canvasHeight - 100, '0, 255, 255', 35);
+            createParticles(centerX, canvasHeight - 100, '0, 255, 255', gameState.bossNumber > 3 ? 18 : 25);
             break;
         case 'rapid_fire':
             gameState.activeSkills.rapid_fire = Date.now() + skill.duration;
-            createParticles(centerX, canvasHeight - 100, '255, 0, 68', 30);
+            createParticles(centerX, canvasHeight - 100, '255, 0, 68', gameState.bossNumber > 3 ? 15 : 20);
             break;
         case 'heal':
             gameState.balls += 30;
             syncPlayerBalls();
             updateUI();
-            createParticles(centerX, canvasHeight - 100, '0, 255, 136', 40);
+            createParticles(centerX, canvasHeight - 100, '0, 255, 136', gameState.bossNumber > 3 ? 20 : 30);
             break;
         case 'triple_shot':
             gameState.activeSkills.triple_shot = Date.now() + skill.duration;
-            createParticles(centerX, canvasHeight - 100, '153, 0, 255', 30);
+            createParticles(centerX, canvasHeight - 100, '153, 0, 255', gameState.bossNumber > 3 ? 15 : 20);
             break;
     }
 }
@@ -1055,8 +1078,9 @@ function defeatBoss() {
     gameState.level++;
     gameState.speed += 0.4;
     
-    // Big explosion
-    for (let i = 0; i < 80; i++) {
+    // Big explosion (reduced for performance)
+    const explosionCount = gameState.bossNumber > 3 ? 40 : 60;
+    for (let i = 0; i < explosionCount; i++) {
         createParticles(canvasWidth / 2 + (Math.random() - 0.5) * 150, gameState.bossY + (Math.random() - 0.5) * 100, '255, 200, 50', 3);
     }
     
@@ -1166,27 +1190,57 @@ function drawVictory() {
 }
 
 function drawParticles() {
-    if (gameState.particles.length > 200) gameState.particles = gameState.particles.slice(-200);
+    // Aggressive particle limit for performance
+    if (gameState.particles.length > MAX_PARTICLES) {
+        gameState.particles = gameState.particles.slice(-MAX_PARTICLES);
+    }
     
-    gameState.particles = gameState.particles.filter(p => {
+    // Reduce particle count based on boss number for better performance
+    const performanceMode = gameState.bossNumber > 3;
+    const maxParticlesForBoss = performanceMode ? MAX_PARTICLES * 0.6 : MAX_PARTICLES;
+    
+    if (gameState.particles.length > maxParticlesForBoss) {
+        gameState.particles = gameState.particles.slice(-maxParticlesForBoss);
+    }
+    
+    // Batch particle updates and rendering for better performance
+    const performanceModeDecay = performanceMode ? 0.03 : 0.02;
+    const visibleParticles = [];
+    
+    // Update and filter particles in one pass
+    for (let i = gameState.particles.length - 1; i >= 0; i--) {
+        const p = gameState.particles[i];
         p.x += p.vx;
         p.y += p.vy;
-        p.life -= 0.02;
+        p.life -= performanceModeDecay;
         p.vy += 0.1;
         
-        if (p.life <= 0) return false;
-        
-        ctx.fillStyle = `rgba(${p.color}, ${p.life})`;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
-        ctx.fill();
-        
-        return true;
-    });
+        // Only keep alive particles that are on screen
+        if (p.life > 0 && p.x > -50 && p.x < canvasWidth + 50 && p.y > -50 && p.y < canvasHeight + 50) {
+            visibleParticles.push(p);
+        }
+    }
+    
+    gameState.particles = visibleParticles;
+    
+    // Batch render particles
+    if (visibleParticles.length > 0) {
+        visibleParticles.forEach(p => {
+            ctx.fillStyle = `rgba(${p.color}, ${p.life})`;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+            ctx.fill();
+        });
+    }
 }
 
 function createParticles(x, y, color, count = 10) {
-    for (let i = 0; i < count; i++) {
+    // Reduce particle count based on boss number for performance
+    const performanceMode = gameState.bossNumber > 3;
+    const adjustedCount = performanceMode ? Math.floor(count * 0.5) : count;
+    const finalCount = Math.min(adjustedCount, 30); // Max 30 particles per call
+    
+    for (let i = 0; i < finalCount; i++) {
         gameState.particles.push({
             x, y,
             vx: (Math.random() - 0.5) * 16,
@@ -1585,7 +1639,16 @@ document.body.addEventListener('touchmove', (e) => {
     }
 }, { passive: false });
 
-function gameLoop() {
+function gameLoop(currentTime) {
+    // Throttle to target FPS for consistent performance
+    const deltaTime = currentTime - lastFrameTime;
+    if (deltaTime < FRAME_TIME && lastFrameTime !== 0) {
+        requestAnimationFrame(gameLoop);
+        return;
+    }
+    lastFrameTime = currentTime;
+    
+    // Clear and redraw
     drawBackground();
     
     if (gameState.isVictory) {
@@ -1603,8 +1666,11 @@ function gameLoop() {
     if (!gameState.isBoss) {
         drawBossCounter();
         
-        gameState.gates.forEach(gate => { gate.y += gameState.speed; });
+        // Batch gate position updates
+        const speed = gameState.speed;
+        gameState.gates.forEach(gate => { gate.y += speed; });
         
+        // Remove off-screen gates more efficiently
         while (gameState.gates.length > 0 && gameState.gates[0].y > canvasHeight + 100) {
             gameState.gates.shift();
             if (gameState.gates.length > 0) {
@@ -1667,9 +1733,9 @@ shareBtn.addEventListener('click', async () => {
     
     let text;
     if (gameState.bossNumber >= FINAL_BOSS_NUMBER) {
-        text = `🏆 Ball Run'da tam zafer! 🎉\n\n✨ Level ${gameState.level}'e kadar geldim!\n🔵 ${gameState.balls} top topladım\n👹 ${gameState.bossNumber} boss yendim\n💎 ${gameState.ballTraits.length} özellik kazandım\n\n📊 Puanım: ${score} 🎯\n\n🎮 Hadi sen de oyna! 👇\n${gameUrl}`;
+        text = `🏆 Ball Run'da tam zafer! 🎉\n\n✨ Level ${gameState.level}'e kadar geldim!\n👹 ${gameState.bossNumber} boss yendim\n\n📊 Puanım: ${score} 🎯\n\n🎮 Hadi sen de oyna! 👇\n${gameUrl}`;
     } else {
-        text = `🎮 Ball Run'da oynuyorum! 🔥\n\n✨ Level ${gameState.level}'e kadar geldim!\n🔵 ${gameState.balls} top topladım\n👹 ${gameState.bossNumber} boss yendim\n💎 ${gameState.ballTraits.length} özellik kazandım\n\n📊 Puanım: ${score} 🎯\n\n🎮 Hadi sen de oyna! 👇\n${gameUrl}`;
+        text = `🎮 Ball Run'da oynuyorum! 🔥\n\n✨ Level ${gameState.level}'e kadar geldim!\n👹 ${gameState.bossNumber} boss yendim\n\n📊 Puanım: ${score} 🎯\n\n🎮 Hadi sen de oyna! 👇\n${gameUrl}`;
     }
     
     try {
@@ -1741,4 +1807,5 @@ if (!hasSeenOnboarding) {
     initGame();
 }
 
-gameLoop();
+// Start game loop with performance optimization
+requestAnimationFrame(gameLoop);
