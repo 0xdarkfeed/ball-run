@@ -726,53 +726,55 @@ function drawDroppedSkills() {
 let skillPopup = { text: '', color: '', time: 0 };
 
 function showSkillPopup(skill) {
-    skillPopup = { text: `${skill.name} ACTIVATED!`, color: skill.color, time: Date.now() + 1200 };
+    skillPopup = { text: `${skill.name} ACTIVATED!`, color: skill.color, time: Date.now() + 2000 };
 }
 
 function drawSkillPopup() {
     if (Date.now() < skillPopup.time) {
-        const progress = (skillPopup.time - Date.now()) / 1200;
-        const scale = 1 + (1 - progress) * 0.3;
-        const yPos = canvasHeight / 2; // Screen center
+        const elapsed = Date.now() - (skillPopup.time - 2000);
+        const progress = 1 - (elapsed / 2000); // 1 to 0 over 2 seconds
+        const scale = 1 + (1 - progress) * 0.2; // Slight scale animation
+        const centerX = canvasWidth / 2;
+        const centerY = canvasHeight / 2; // Perfect center
         
         ctx.save();
         
-        // Dark background for better visibility
-        ctx.globalAlpha = progress * 0.4;
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-        ctx.fillRect(canvasWidth / 2 - 150, yPos - 25, 300, 50);
+        // Dark background for better visibility (fades out)
+        ctx.globalAlpha = progress * 0.5;
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fillRect(centerX - 160, centerY - 30, 320, 60);
         
-        // Background glow
-        ctx.globalAlpha = progress * 0.3;
-        const gradient = ctx.createRadialGradient(canvasWidth / 2, yPos, 0, canvasWidth / 2, yPos, 140);
+        // Background glow (fades out)
+        ctx.globalAlpha = progress * 0.4;
+        const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 150);
         gradient.addColorStop(0, skillPopup.color);
         gradient.addColorStop(1, 'transparent');
         ctx.fillStyle = gradient;
         ctx.beginPath();
-        ctx.arc(canvasWidth / 2, yPos, 140, 0, Math.PI * 2);
+        ctx.arc(centerX, centerY, 150, 0, Math.PI * 2);
         ctx.fill();
         
-        // Main text with stronger outline for visibility
+        // Main text with smooth fade out
         ctx.globalAlpha = progress;
         ctx.fillStyle = skillPopup.color;
-        ctx.font = `bold ${24 * scale}px Arial`;
+        ctx.font = `bold ${26 * scale}px Arial`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.shadowColor = skillPopup.color;
-        ctx.shadowBlur = 35;
+        ctx.shadowBlur = 40 * progress; // Glow also fades
         
         // Strong black outline
         ctx.strokeStyle = '#000000';
-        ctx.lineWidth = 4;
-        ctx.strokeText(skillPopup.text, canvasWidth / 2, yPos);
+        ctx.lineWidth = 5;
+        ctx.strokeText(skillPopup.text, centerX, centerY);
         
         // Main text
-        ctx.fillText(skillPopup.text, canvasWidth / 2, yPos);
+        ctx.fillText(skillPopup.text, centerX, centerY);
         
-        // Outer glow
-        ctx.shadowBlur = 60;
-        ctx.globalAlpha = progress * 0.5;
-        ctx.fillText(skillPopup.text, canvasWidth / 2, yPos);
+        // Outer glow (fades out)
+        ctx.shadowBlur = 70 * progress;
+        ctx.globalAlpha = progress * 0.6;
+        ctx.fillText(skillPopup.text, centerX, centerY);
         
         ctx.restore();
     }
