@@ -1198,6 +1198,49 @@ function createParticles(x, y, color, count = 10) {
     }
 }
 
+function playGateSound() {
+    try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Create a pleasant "ding" sound
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        // Pleasant bell-like tone
+        oscillator.frequency.value = 800; // Higher pitch for positive feel
+        oscillator.type = 'sine'; // Smooth sine wave
+        
+        gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.15, audioContext.currentTime + 0.01);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.15);
+        
+        // Add a second harmonic for richer sound
+        setTimeout(() => {
+            try {
+                const osc2 = audioContext.createOscillator();
+                const gain2 = audioContext.createGain();
+                osc2.connect(gain2);
+                gain2.connect(audioContext.destination);
+                osc2.frequency.value = 1200;
+                osc2.type = 'sine';
+                gain2.gain.setValueAtTime(0, audioContext.currentTime);
+                gain2.gain.linearRampToValueAtTime(0.08, audioContext.currentTime + 0.01);
+                gain2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+                osc2.start(audioContext.currentTime);
+                osc2.stop(audioContext.currentTime + 0.1);
+            } catch (e) {}
+        }, 20);
+    } catch (error) {
+        // Silently fail if audio not available
+    }
+}
+
 function checkGateCollision() {
     const playerY = canvasHeight - 100;
     
@@ -1207,6 +1250,9 @@ function checkGateCollision() {
         if (gate.y <= playerY + 20 && gate.y + gate.height >= playerY - 20) {
             gate.passed = true;
             gameState.gatesPassed++;
+            
+            // Play pleasant ding sound
+            playGateSound();
             
             const playerX = canvasWidth / 2 + gameState.playerSide * (canvasWidth / 4);
             const selectedOp = playerX < canvasWidth / 2 ? gate.leftOp : gate.rightOp;
@@ -1262,11 +1308,11 @@ function playBossMusic() {
     stopBossMusic();
     
     try {
-        // Create boss music using Web Audio API
+        // Create boss music using Web Audio API - Mario style!
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
         
-        // Create a simple intense boss theme with multiple layers
-        const createBossTone = (freq, duration, startTime, type = 'sawtooth', volume = 0.1) => {
+        // Create a melodic tone (Mario boss style)
+        const createTone = (freq, duration, startTime, type = 'square', volume = 0.12) => {
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
             
@@ -1277,16 +1323,24 @@ function playBossMusic() {
             oscillator.type = type;
             
             gainNode.gain.setValueAtTime(0, startTime);
-            gainNode.gain.linearRampToValueAtTime(volume, startTime + 0.05);
+            gainNode.gain.linearRampToValueAtTime(volume, startTime + 0.01);
             gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
             
             oscillator.start(startTime);
             oscillator.stop(startTime + duration);
         };
         
-        // Create intense boss music pattern - more dramatic
-        const baseFreq = 60;
+        // Mario boss music pattern - fun and energetic!
+        // Notes: C, E, G, C (C major chord progression)
+        const C4 = 261.63;  // C
+        const E4 = 329.63;  // E
+        const G4 = 392.00;  // G
+        const C5 = 523.25;  // C (octave)
+        const E5 = 659.25;  // E (octave)
+        const G5 = 783.99;  // G (octave)
+        
         let musicInterval;
+        let beatCount = 0;
         
         const playBossLoop = () => {
             if (!gameState.isBoss || !gameState.isPlaying) {
@@ -1295,25 +1349,50 @@ function playBossMusic() {
             }
             
             const now = audioContext.currentTime;
+            const beat = beatCount % 16; // 16-beat pattern
             
-            // Low bass line
-            createBossTone(baseFreq, 0.4, now, 'sawtooth', 0.12);
-            createBossTone(baseFreq * 1.5, 0.3, now + 0.2, 'sawtooth', 0.1);
-            createBossTone(baseFreq * 2, 0.35, now + 0.4, 'sawtooth', 0.1);
+            // Bass line (lower octave)
+            if (beat % 4 === 0) {
+                createTone(C4 * 0.5, 0.3, now, 'square', 0.15);
+            }
+            if (beat % 4 === 2) {
+                createTone(G4 * 0.5, 0.3, now, 'square', 0.15);
+            }
             
-            // Mid range
-            createBossTone(baseFreq * 3, 0.25, now + 0.1, 'square', 0.08);
-            createBossTone(baseFreq * 4, 0.2, now + 0.3, 'square', 0.08);
+            // Melody line - Mario boss theme pattern
+            if (beat === 0 || beat === 4) {
+                createTone(C5, 0.2, now, 'square', 0.12);
+                createTone(E5, 0.2, now + 0.1, 'square', 0.12);
+            }
+            if (beat === 2 || beat === 6) {
+                createTone(G5, 0.2, now, 'square', 0.12);
+                createTone(C5, 0.2, now + 0.1, 'square', 0.12);
+            }
+            if (beat === 8 || beat === 12) {
+                createTone(E5, 0.2, now, 'square', 0.12);
+                createTone(G5, 0.2, now + 0.1, 'square', 0.12);
+            }
+            if (beat === 10 || beat === 14) {
+                createTone(C5, 0.2, now, 'square', 0.12);
+                createTone(E5, 0.2, now + 0.1, 'square', 0.12);
+            }
             
-            // High accent
-            createBossTone(baseFreq * 6, 0.15, now + 0.5, 'triangle', 0.06);
+            // Harmony layer
+            if (beat % 4 === 0) {
+                createTone(E4, 0.25, now + 0.05, 'triangle', 0.08);
+            }
+            if (beat % 4 === 2) {
+                createTone(G4, 0.25, now + 0.05, 'triangle', 0.08);
+            }
+            
+            beatCount++;
         };
         
         // Start playing immediately
         playBossLoop();
         
-        // Continue in loop
-        musicInterval = setInterval(playBossLoop, 600);
+        // Continue in loop (faster tempo for Mario style)
+        musicInterval = setInterval(playBossLoop, 200); // 200ms = fast tempo
         
         // Store audio context and interval for cleanup
         gameState.bossAudioContext = audioContext;

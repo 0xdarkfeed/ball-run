@@ -4,10 +4,7 @@
   "scripts": {
     "dev": "npx serve . -p 3000"
   },
-  "dependencies": {
-    "@coinbase/cdp-sdk": "^1.0.0",
-    "ethers": "^6.9.0"
-  },
+  "dependencies": {},
   "devDependencies": {
     "canvas": "^3.2.0",
     "serve": "^14.2.0"
