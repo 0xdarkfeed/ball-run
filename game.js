@@ -12,6 +12,7 @@ const finalLevelEl = document.getElementById('finalLevel');
 const retryBtn = document.getElementById('retryBtn');
 const shareBtn = document.getElementById('shareBtn');
 const bossAlertEl = document.getElementById('bossAlert');
+const bossEmojiEl = document.getElementById('bossEmoji');
 
 const MAX_VISUAL_BALLS = 40;
 const FINAL_BOSS_NUMBER = 10;
@@ -162,6 +163,7 @@ function initGame() {
     updateUI();
     gameOverEl.classList.add('hidden');
     bossAlertEl.classList.add('hidden');
+    bossEmojiEl.classList.add('hidden');
 }
 
 function createPlayerBalls() {
@@ -777,9 +779,12 @@ function activateSkill(skill) {
     }
 }
 
-// Draw emoji boss - beyaz efekt kaldırıldı
+// Draw emoji boss - HTML overlay for Apple compatibility
 function drawBoss() {
-    if (!gameState.isBoss || !gameState.bossType) return;
+    if (!gameState.isBoss || !gameState.bossType) {
+        bossEmojiEl.classList.add('hidden');
+        return;
+    }
     
     const boss = gameState.bossType;
     const centerX = canvasWidth / 2;
@@ -826,12 +831,13 @@ function drawBoss() {
     ctx.arc(centerX, bossY, size * 2, 0, Math.PI * 2);
     ctx.fill();
     
-    // Emoji boss (large)
-    const emojiSize = size * 2 + Math.sin(Date.now() * 0.005) * 5;
-    ctx.font = `${emojiSize}px Arial`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(boss.emoji, centerX, bossY);
+    // Emoji boss as HTML overlay (for Apple compatibility)
+    const canvasRect = canvas.getBoundingClientRect();
+    const emojiY = canvasRect.top + bossY;
+    bossEmojiEl.textContent = boss.emoji;
+    bossEmojiEl.style.color = boss.color;
+    bossEmojiEl.style.top = `${emojiY}px`;
+    bossEmojiEl.classList.remove('hidden');
 }
 
 function bossAttack() {
@@ -966,6 +972,7 @@ function defeatBoss() {
     gameState.bossProjectiles = [];
     gameState.droppedSkills = [];
     bossAlertEl.classList.add('hidden');
+    bossEmojiEl.classList.add('hidden');
     
     if (gameState.bossNumber >= FINAL_BOSS_NUMBER) {
         showVictory();
@@ -1180,6 +1187,7 @@ function endGame() {
     stopHolding();
     finalLevelEl.textContent = `Level: ${gameState.level} | Bosses: ${gameState.bossNumber}`;
     gameOverEl.classList.remove('hidden');
+    bossEmojiEl.classList.add('hidden');
 }
 
 // Controls - Tek tıklama = tek ateş, basılı tutma = sürekli ateş

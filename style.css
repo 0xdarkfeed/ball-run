@@ -188,6 +188,34 @@ body {
     50% { transform: translate(-50%, -50%) scale(1.1); }
 }
 
+#bossEmoji {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    pointer-events: none;
+    font-size: 140px;
+    line-height: 1;
+    text-align: center;
+    filter: drop-shadow(0 0 20px currentColor);
+    animation: bossPulse 2s ease-in-out infinite;
+}
+
+#bossEmoji.hidden {
+    display: none;
+}
+
+@keyframes bossPulse {
+    0%, 100% { 
+        transform: translateX(-50%) scale(1);
+        filter: drop-shadow(0 0 20px currentColor);
+    }
+    50% { 
+        transform: translateX(-50%) scale(1.05);
+        filter: drop-shadow(0 0 30px currentColor);
+    }
+}
+
 @media (max-width: 500px) {
     .game-over-content h1 {
         font-size: 32px;
@@ -200,5 +228,9 @@ body {
     
     .boss-text {
         font-size: 22px;
+    }
+    
+    #bossEmoji {
+        font-size: 120px;
     }
 }

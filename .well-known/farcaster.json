@@ -1,26 +1,26 @@
 {
   "accountAssociation": {
-    "header": "[FARCASTER'DAN ALINACAK]",
-    "payload": "[FARCASTER'DAN ALINACAK]",
-    "signature": "[FARCASTER'DAN ALINACAK]"
+    "header": "eyJmaWQiOjEwMDM1MTQsInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHgzOEE4QzNENzdDMEVGQ2JhY0IzYzFGMWJCMTE4RTNGNjY5ZDdlMjMxIn0",
+    "payload": "eyJkb21haW4iOiJiYWxsLXJ1bi10ZWFsLnZlcmNlbC5hcHAifQ",
+    "signature": "W5gI/jz0AhR3knhP/9mUSOwB3uALf/wXLpoCTZtyO0EMQ1OAmMXYwvHDG2J/IYF2LlqAusqre0ObZ846/RtsfBw="
   },
   "frame": {
     "version": "1",
     "name": "Ball Run",
     "subtitle": "Neon Runner Game",
     "description": "A TRON-inspired endless runner game. Swipe to choose gates and change your ball count. Survive the boss every 5 levels!",
-    "iconUrl": "https://[DOMAIN]/icon.png",
-    "homeUrl": "https://[DOMAIN]",
-    "imageUrl": "https://[DOMAIN]/preview.png",
-    "splashImageUrl": "https://[DOMAIN]/icon.png",
+    "iconUrl": "https://ball-run-teal.vercel.app/icon.png",
+    "homeUrl": "https://ball-run-teal.vercel.app",
+    "imageUrl": "https://ball-run-teal.vercel.app/preview.png",
+    "splashImageUrl": "https://ball-run-teal.vercel.app/icon.png",
     "splashBackgroundColor": "#0a0a12",
     "primaryCategory": "games",
     "tags": ["game", "arcade", "farcaster", "runner"],
     "tagline": "Swipe, survive, beat the boss!",
-    "heroImageUrl": "https://[DOMAIN]/preview.png",
-    "screenshotUrls": ["https://[DOMAIN]/preview.png"],
+    "heroImageUrl": "https://ball-run-teal.vercel.app/preview.png",
+    "screenshotUrls": ["https://ball-run-teal.vercel.app/preview.png"],
     "ogTitle": "Ball Run - Neon Runner Game",
     "ogDescription": "A TRON-inspired endless runner. Choose your gates wisely!",
-    "ogImageUrl": "https://[DOMAIN]/preview.png"
+    "ogImageUrl": "https://ball-run-teal.vercel.app/preview.png"
   }
 }
