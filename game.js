@@ -20,14 +20,6 @@ const API_BASE_URL = window.location.origin;
 
 const MAX_VISUAL_BALLS = 40;
 const FINAL_BOSS_NUMBER = 10;
-const MAX_PARTICLES = 100; // Reduced for better performance
-
-// Performance optimizations - cached values
-let cachedGradient = null;
-let cachedGridOffset = 0;
-let lastFrameTime = 0;
-const TARGET_FPS = 60;
-const FRAME_TIME = 1000 / TARGET_FPS;
 
 const BOSS_HEALTH = [100, 200, 350, 500, 750, 1000, 1500, 2000, 3000, 5000];
 
@@ -257,49 +249,42 @@ function updateUI() {
 }
 
 function drawBackground() {
-    // Fill background
     ctx.fillStyle = '#0a0a12';
     ctx.fillRect(0, 0, canvasWidth, canvasHeight);
     
-    // Cache gradient to avoid recreating every frame
-    if (!cachedGradient) {
-        cachedGradient = ctx.createLinearGradient(0, 0, 0, canvasHeight);
-        cachedGradient.addColorStop(0, 'rgba(0, 255, 255, 0.8)');
-        cachedGradient.addColorStop(1, 'rgba(191, 0, 255, 0.8)');
-    }
-    
-    // Optimize grid drawing - only draw visible lines
     ctx.strokeStyle = 'rgba(0, 255, 255, 0.08)';
     ctx.lineWidth = 1;
+    
     const gridSize = 40;
     const offset = (gameState.distance * 0.5) % gridSize;
     
-    // Batch horizontal lines
-    ctx.beginPath();
     for (let y = offset; y < canvasHeight; y += gridSize) {
+        ctx.beginPath();
         ctx.moveTo(0, y);
         ctx.lineTo(canvasWidth, y);
+        ctx.stroke();
     }
-    ctx.stroke();
     
-    // Batch vertical lines
-    ctx.beginPath();
     for (let x = 0; x < canvasWidth; x += gridSize) {
+        ctx.beginPath();
         ctx.moveTo(x, 0);
         ctx.lineTo(x, canvasHeight);
+        ctx.stroke();
     }
-    ctx.stroke();
     
-    // Side borders with cached gradient
-    ctx.strokeStyle = cachedGradient;
+    const gradient = ctx.createLinearGradient(0, 0, 0, canvasHeight);
+    gradient.addColorStop(0, 'rgba(0, 255, 255, 0.8)');
+    gradient.addColorStop(1, 'rgba(191, 0, 255, 0.8)');
+    
+    ctx.strokeStyle = gradient;
     ctx.lineWidth = 4;
     ctx.shadowColor = '#00ffff';
     ctx.shadowBlur = 15;
-    
-    // Batch border drawing
     ctx.beginPath();
     ctx.moveTo(2, 0);
     ctx.lineTo(2, canvasHeight);
+    ctx.stroke();
+    ctx.beginPath();
     ctx.moveTo(canvasWidth - 2, 0);
     ctx.lineTo(canvasWidth - 2, canvasHeight);
     ctx.stroke();
@@ -320,27 +305,19 @@ function drawBossCounter() {
 }
 
 function drawGates() {
-    const gateWidth = canvasWidth / 2 - 15;
-    const dividerX = canvasWidth / 2 - 3;
-    const dividerWidth = 6;
-    
-    // Batch divider rendering
-    ctx.fillStyle = '#bf00ff';
-    ctx.shadowColor = '#bf00ff';
-    ctx.shadowBlur = 15;
-    
     gameState.gates.forEach(gate => {
-        // Only draw visible gates
         if (gate.y > canvasHeight + 50 || gate.y + gate.height < -50) return;
         
+        const gateWidth = canvasWidth / 2 - 15;
         drawGate(10, gate.y, gateWidth, gate.height, gate.leftOp);
         drawGate(canvasWidth / 2 + 5, gate.y, gateWidth, gate.height, gate.rightOp);
         
-        // Draw divider
-        ctx.fillRect(dividerX, gate.y, dividerWidth, gate.height);
+        ctx.fillStyle = '#bf00ff';
+        ctx.shadowColor = '#bf00ff';
+        ctx.shadowBlur = 15;
+        ctx.fillRect(canvasWidth / 2 - 3, gate.y, 6, gate.height);
+        ctx.shadowBlur = 0;
     });
-    
-    ctx.shadowBlur = 0;
 }
 
 function drawGate(x, y, width, height, op) {
@@ -610,12 +587,6 @@ function drawActiveSkills() {
 function drawAttackBalls() {
     const bulletStyle = getBulletStyle();
     const multiplier = getDamageMultiplier();
-    const extremeMode = gameState.bossNumber >= 5;
-    
-    // Limit attack balls for performance
-    if (gameState.attackBalls.length > (extremeMode ? 30 : 50)) {
-        gameState.attackBalls = gameState.attackBalls.slice(-(extremeMode ? 30 : 50));
-    }
     
     gameState.attackBalls = gameState.attackBalls.filter(ball => {
         const dx = canvasWidth / 2 - ball.x;
@@ -628,8 +599,7 @@ function drawAttackBalls() {
             gameState.bossHealth -= damage;
             
             const particleColor = damage >= 10 ? '255, 0, 255' : damage >= 5 ? '255, 170, 0' : '255, 100, 50';
-            const particleCount = extremeMode ? Math.min(damage + 2, 10) : Math.min(damage + 5, 20);
-            createParticles(ball.x, ball.y, particleColor, particleCount);
+            createParticles(ball.x, ball.y, particleColor, Math.min(damage + 5, 20));
             
             if (gameState.bossHealth <= 0) {
                 gameState.bossHealth = 0;
@@ -812,7 +782,8 @@ function activateSkill(skill) {
         gameState.attackBalls.push({ x: centerX, y: canvasHeight - 100, damage, isMega: true, color: bulletColor });
         
         if (skill.id === 'nuke') {
-            for (let i = 0; i < 60; i++) createParticles(centerX + (Math.random() - 0.5) * 100, canvasHeight - 100, '255, 100, 0', 2);
+            const nukeParticleCount = gameState.bossNumber > 5 ? 20 : gameState.bossNumber > 3 ? 35 : 60;
+            for (let i = 0; i < nukeParticleCount; i++) createParticles(centerX + (Math.random() - 0.5) * 100, canvasHeight - 100, '255, 100, 0', 2);
         } else if (skill.id === 'laser') {
             for (let i = 0; i < 5; i++) {
                 gameState.attackBalls.push({ x: centerX + (Math.random() - 0.5) * 30, y: canvasHeight - 100 - i * 20, damage: Math.ceil(damage / 5), isMega: true, color: '#00aaff' });
@@ -821,36 +792,43 @@ function activateSkill(skill) {
         return;
     }
     
+    // Performance: reduce particle count based on boss number
+    const getParticleCount = (baseCount) => {
+        if (gameState.bossNumber > 5) return Math.floor(baseCount * 0.35);
+        if (gameState.bossNumber > 3) return Math.floor(baseCount * 0.6);
+        return baseCount;
+    };
+    
     switch(skill.id) {
         case 'x10_damage':
             gameState.activeSkills.x10_damage = Date.now() + skill.duration;
-            createParticles(centerX, canvasHeight - 100, '255, 0, 255', gameState.bossNumber > 3 ? 20 : 30);
+            createParticles(centerX, canvasHeight - 100, '255, 0, 255', getParticleCount(40));
             break;
         case 'x5_damage':
             gameState.activeSkills.x5_damage = Date.now() + skill.duration;
-            createParticles(centerX, canvasHeight - 100, '255, 170, 0', gameState.bossNumber > 3 ? 18 : 25);
+            createParticles(centerX, canvasHeight - 100, '255, 170, 0', getParticleCount(35));
             break;
         case 'x3_damage':
             gameState.activeSkills.x3_damage = Date.now() + skill.duration;
-            createParticles(centerX, canvasHeight - 100, '255, 220, 0', gameState.bossNumber > 3 ? 15 : 20);
+            createParticles(centerX, canvasHeight - 100, '255, 220, 0', getParticleCount(30));
             break;
         case 'shield':
             gameState.activeSkills.shield = Date.now() + skill.duration;
-            createParticles(centerX, canvasHeight - 100, '0, 255, 255', gameState.bossNumber > 3 ? 18 : 25);
+            createParticles(centerX, canvasHeight - 100, '0, 255, 255', getParticleCount(35));
             break;
         case 'rapid_fire':
             gameState.activeSkills.rapid_fire = Date.now() + skill.duration;
-            createParticles(centerX, canvasHeight - 100, '255, 0, 68', gameState.bossNumber > 3 ? 15 : 20);
+            createParticles(centerX, canvasHeight - 100, '255, 0, 68', getParticleCount(30));
             break;
         case 'heal':
             gameState.balls += 30;
             syncPlayerBalls();
             updateUI();
-            createParticles(centerX, canvasHeight - 100, '0, 255, 136', gameState.bossNumber > 3 ? 20 : 30);
+            createParticles(centerX, canvasHeight - 100, '0, 255, 136', getParticleCount(40));
             break;
         case 'triple_shot':
             gameState.activeSkills.triple_shot = Date.now() + skill.duration;
-            createParticles(centerX, canvasHeight - 100, '153, 0, 255', gameState.bossNumber > 3 ? 15 : 20);
+            createParticles(centerX, canvasHeight - 100, '153, 0, 255', getParticleCount(30));
             break;
     }
 }
@@ -897,24 +875,15 @@ function drawBoss() {
     ctx.font = 'bold 10px Arial';
     ctx.fillText(`Boss ${gameState.bossNumber}/${FINAL_BOSS_NUMBER}`, centerX, 95);
     
-    // Boss aura - simplified for high boss numbers (skull boss and beyond)
-    if (gameState.bossNumber < 5) {
-        // Full aura for early bosses
-        const auraGradient = ctx.createRadialGradient(centerX, bossY, 0, centerX, bossY, size * 2);
-        auraGradient.addColorStop(0, boss.attackColor);
-        auraGradient.addColorStop(0.5, boss.color + '33');
-        auraGradient.addColorStop(1, 'transparent');
-        ctx.fillStyle = auraGradient;
-        ctx.beginPath();
-        ctx.arc(centerX, bossY, size * 2, 0, Math.PI * 2);
-        ctx.fill();
-    } else {
-        // Simplified aura for skull boss and beyond (performance)
-        ctx.fillStyle = boss.attackColor + '22';
-        ctx.beginPath();
-        ctx.arc(centerX, bossY, size * 1.5, 0, Math.PI * 2);
-        ctx.fill();
-    }
+    // Boss aura
+    const auraGradient = ctx.createRadialGradient(centerX, bossY, 0, centerX, bossY, size * 2);
+    auraGradient.addColorStop(0, boss.attackColor);
+    auraGradient.addColorStop(0.5, boss.color + '33');
+    auraGradient.addColorStop(1, 'transparent');
+    ctx.fillStyle = auraGradient;
+    ctx.beginPath();
+    ctx.arc(centerX, bossY, size * 2, 0, Math.PI * 2);
+    ctx.fill();
     
     // Emoji boss as HTML overlay (for Apple compatibility)
     // Pozisyonu game container'a göre hesapla
@@ -957,17 +926,9 @@ function bossAttack() {
     gameState.lastBossAttack = now;
     
     const boss = gameState.bossType;
-    // Reduce projectile count for skull boss and beyond
-    const baseCount = gameState.bossNumber >= 5 ? 2 : 3;
-    const projectileCount = gameState.bossNumber >= 5 
-        ? baseCount + Math.floor(gameState.bossNumber / 3) // Slower growth
-        : baseCount + Math.floor(gameState.bossNumber / 2);
+    const projectileCount = 3 + Math.floor(gameState.bossNumber / 2);
     
-    // Limit max projectiles
-    const maxProjectiles = gameState.bossNumber >= 5 ? 6 : 8;
-    const finalCount = Math.min(projectileCount, maxProjectiles);
-    
-    for (let i = 0; i < finalCount; i++) {
+    for (let i = 0; i < projectileCount; i++) {
         const angle = (Math.PI * 0.3) + (Math.PI * 0.4 * i / Math.max(1, projectileCount - 1));
         const speed = 3.5 + gameState.bossNumber * 0.3;
         
@@ -983,21 +944,13 @@ function bossAttack() {
         });
     }
     
-    // Reduce particles for high boss numbers
-    const particleCount = gameState.bossNumber >= 5 ? 5 : 10;
-    createParticles(canvasWidth / 2, gameState.bossY + gameState.bossSize, '255, 100, 100', particleCount);
+    createParticles(canvasWidth / 2, gameState.bossY + gameState.bossSize, '255, 100, 100', 10);
 }
 
 function drawBossProjectiles() {
     const hasShield = gameState.activeSkills.shield && Date.now() < gameState.activeSkills.shield;
     const playerY = canvasHeight - 100;
     const playerX = canvasWidth / 2 + gameState.playerSide * (canvasWidth / 4);
-    const extremeMode = gameState.bossNumber >= 5;
-    
-    // Limit projectiles for performance
-    if (gameState.bossProjectiles.length > (extremeMode ? 15 : 25)) {
-        gameState.bossProjectiles = gameState.bossProjectiles.slice(-(extremeMode ? 15 : 25));
-    }
     
     gameState.bossProjectiles = gameState.bossProjectiles.filter(proj => {
         proj.x += proj.vx;
@@ -1017,7 +970,7 @@ function drawBossProjectiles() {
             if (gameState.balls < 0) gameState.balls = 0;
             syncPlayerBalls();
             updateUI();
-            createParticles(proj.x, proj.y, '255, 100, 100', extremeMode ? 6 : 12);
+            createParticles(proj.x, proj.y, '255, 100, 100', 12);
             
             if (gameState.balls <= 0) endGame();
             return false;
@@ -1029,22 +982,19 @@ function drawBossProjectiles() {
         
         ctx.fillStyle = proj.color;
         ctx.shadowColor = proj.color;
-        ctx.shadowBlur = extremeMode ? 10 : 15; // Reduced shadow for performance
+        ctx.shadowBlur = 15;
         ctx.beginPath();
         ctx.arc(0, 0, proj.radius, 0, Math.PI * 2);
         ctx.fill();
         
-        // Simplified spikes for extreme mode
-        if (!extremeMode) {
-            ctx.strokeStyle = '#ffffff88';
-            ctx.lineWidth = 2;
-            for (let i = 0; i < 6; i++) {
-                const spikeAngle = (i / 6) * Math.PI * 2;
-                ctx.beginPath();
-                ctx.moveTo(Math.cos(spikeAngle) * proj.radius * 0.5, Math.sin(spikeAngle) * proj.radius * 0.5);
-                ctx.lineTo(Math.cos(spikeAngle) * proj.radius * 1.2, Math.sin(spikeAngle) * proj.radius * 1.2);
-                ctx.stroke();
-            }
+        ctx.strokeStyle = '#ffffff88';
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 6; i++) {
+            const spikeAngle = (i / 6) * Math.PI * 2;
+            ctx.beginPath();
+            ctx.moveTo(Math.cos(spikeAngle) * proj.radius * 0.5, Math.sin(spikeAngle) * proj.radius * 0.5);
+            ctx.lineTo(Math.cos(spikeAngle) * proj.radius * 1.2, Math.sin(spikeAngle) * proj.radius * 1.2);
+            ctx.stroke();
         }
         ctx.shadowBlur = 0;
         ctx.restore();
@@ -1114,7 +1064,7 @@ function defeatBoss() {
     gameState.speed += 0.4;
     
     // Big explosion (reduced for performance)
-    const explosionCount = gameState.bossNumber > 3 ? 40 : 60;
+    const explosionCount = gameState.bossNumber > 5 ? 30 : gameState.bossNumber > 3 ? 50 : 80;
     for (let i = 0; i < explosionCount; i++) {
         createParticles(canvasWidth / 2 + (Math.random() - 0.5) * 150, gameState.bossY + (Math.random() - 0.5) * 100, '255, 200, 50', 3);
     }
@@ -1126,8 +1076,9 @@ function defeatBoss() {
     generateGates();
     updateUI();
     
-    // Evolution particles
-    createParticles(canvasWidth / 2, canvasHeight - 100, boss.color.replace('#', '').match(/.{2}/g).map(x => parseInt(x, 16)).join(', '), 50);
+    // Evolution particles (reduced for performance)
+    const evolutionParticleCount = gameState.bossNumber > 5 ? 20 : gameState.bossNumber > 3 ? 30 : 50;
+    createParticles(canvasWidth / 2, canvasHeight - 100, boss.color.replace('#', '').match(/.{2}/g).map(x => parseInt(x, 16)).join(', '), evolutionParticleCount);
 }
 
 function showVictory() {
@@ -1190,7 +1141,9 @@ function drawVictory() {
     ctx.fillText(`Traits: ${gameState.ballTraits.join(', ')}`, canvasWidth / 2, 155);
     
     if (Math.random() < 0.12) {
-        createParticles(Math.random() * canvasWidth, Math.random() * canvasHeight * 0.5, ['255, 0, 100', '0, 255, 255', '255, 255, 0'][Math.floor(Math.random() * 3)], 25);
+        // Reduced confetti particles for performance
+        const confettiCount = gameState.bossNumber > 5 ? 8 : gameState.bossNumber > 3 ? 15 : 25;
+        createParticles(Math.random() * canvasWidth, Math.random() * canvasHeight * 0.5, ['255, 0, 100', '0, 255, 255', '255, 255, 0'][Math.floor(Math.random() * 3)], confettiCount);
     }
     
     ctx.fillStyle = '#ff0066';
@@ -1225,61 +1178,39 @@ function drawVictory() {
 }
 
 function drawParticles() {
-    // Aggressive particle limit for performance
-    if (gameState.particles.length > MAX_PARTICLES) {
-        gameState.particles = gameState.particles.slice(-MAX_PARTICLES);
+    // Reduce particle limit based on boss number for performance
+    const maxParticles = gameState.bossNumber > 5 ? 80 : gameState.bossNumber > 3 ? 120 : 150;
+    if (gameState.particles.length > maxParticles) {
+        gameState.particles = gameState.particles.slice(-maxParticles);
     }
     
-    // Reduce particle count based on boss number for better performance
-    // Skull boss (5+) gets even more aggressive optimization
-    const performanceMode = gameState.bossNumber > 3;
-    const extremeMode = gameState.bossNumber >= 5; // Skull boss and beyond
-    const maxParticlesForBoss = extremeMode ? MAX_PARTICLES * 0.4 : (performanceMode ? MAX_PARTICLES * 0.6 : MAX_PARTICLES);
-    
-    if (gameState.particles.length > maxParticlesForBoss) {
-        gameState.particles = gameState.particles.slice(-maxParticlesForBoss);
-    }
-    
-    // Batch particle updates and rendering for better performance
-    const extremeMode = gameState.bossNumber >= 5;
-    const performanceModeDecay = extremeMode ? 0.04 : (performanceMode ? 0.03 : 0.02);
-    const visibleParticles = [];
-    
-    // Update and filter particles in one pass
-    for (let i = gameState.particles.length - 1; i >= 0; i--) {
-        const p = gameState.particles[i];
+    gameState.particles = gameState.particles.filter(p => {
         p.x += p.vx;
         p.y += p.vy;
-        p.life -= performanceModeDecay;
+        p.life -= 0.02;
         p.vy += 0.1;
         
-        // Only keep alive particles that are on screen
-        if (p.life > 0 && p.x > -50 && p.x < canvasWidth + 50 && p.y > -50 && p.y < canvasHeight + 50) {
-            visibleParticles.push(p);
-        }
-    }
-    
-    gameState.particles = visibleParticles;
-    
-    // Batch render particles
-    if (visibleParticles.length > 0) {
-        visibleParticles.forEach(p => {
-            ctx.fillStyle = `rgba(${p.color}, ${p.life})`;
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
-            ctx.fill();
-        });
-    }
+        if (p.life <= 0) return false;
+        
+        ctx.fillStyle = `rgba(${p.color}, ${p.life})`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+        ctx.fill();
+        
+        return true;
+    });
 }
 
 function createParticles(x, y, color, count = 10) {
     // Reduce particle count based on boss number for performance
-    const performanceMode = gameState.bossNumber > 3;
-    const extremeMode = gameState.bossNumber >= 5; // Skull boss and beyond
-    const adjustedCount = extremeMode ? Math.floor(count * 0.3) : (performanceMode ? Math.floor(count * 0.5) : count);
-    const finalCount = extremeMode ? Math.min(adjustedCount, 15) : Math.min(adjustedCount, 30); // Max 15 for extreme mode
+    let particleCount = count;
+    if (gameState.bossNumber > 5) {
+        particleCount = Math.floor(count * 0.4); // 60% reduction for high boss levels
+    } else if (gameState.bossNumber > 3) {
+        particleCount = Math.floor(count * 0.6); // 40% reduction for mid boss levels
+    }
     
-    for (let i = 0; i < finalCount; i++) {
+    for (let i = 0; i < particleCount; i++) {
         gameState.particles.push({
             x, y,
             vx: (Math.random() - 0.5) * 16,
@@ -1404,8 +1335,8 @@ function playBossMusic() {
         // Create boss music using Web Audio API - Mario style!
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
         
-        // Create a melodic tone (Mario boss style) - louder volume
-        const createTone = (freq, duration, startTime, type = 'square', volume = 0.18) => {
+        // Create a melodic tone (Mario boss style)
+        const createTone = (freq, duration, startTime, type = 'square', volume = 0.12) => {
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
             
@@ -1431,12 +1362,9 @@ function playBossMusic() {
         const C5 = 523.25;  // C (octave)
         const E5 = 659.25;  // E (octave)
         const G5 = 783.99;  // G (octave)
-        const A4 = 440.00;  // A (for variation)
-        const D4 = 293.66;  // D (for variation)
         
         let musicInterval;
         let beatCount = 0;
-        const PATTERN_LENGTH = 32; // Longer pattern (32 beats instead of 16)
         
         const playBossLoop = () => {
             if (!gameState.isBoss || !gameState.isPlaying) {
@@ -1445,67 +1373,40 @@ function playBossMusic() {
             }
             
             const now = audioContext.currentTime;
-            const beat = beatCount % PATTERN_LENGTH;
+            const beat = beatCount % 16; // 16-beat pattern
             
-            // Bass line (lower octave) - stronger
+            // Bass line (lower octave)
             if (beat % 4 === 0) {
-                createTone(C4 * 0.5, 0.4, now, 'square', 0.20);
+                createTone(C4 * 0.5, 0.3, now, 'square', 0.15);
             }
             if (beat % 4 === 2) {
-                createTone(G4 * 0.5, 0.4, now, 'square', 0.20);
+                createTone(G4 * 0.5, 0.3, now, 'square', 0.15);
             }
             
-            // Extended melody line - Mario boss theme pattern (longer variation)
-            // First phrase (beats 0-7)
-            if (beat === 0 || beat === 16) {
-                createTone(C5, 0.25, now, 'square', 0.18);
-                createTone(E5, 0.25, now + 0.12, 'square', 0.18);
+            // Melody line - Mario boss theme pattern
+            if (beat === 0 || beat === 4) {
+                createTone(C5, 0.2, now, 'square', 0.12);
+                createTone(E5, 0.2, now + 0.1, 'square', 0.12);
             }
-            if (beat === 2 || beat === 18) {
-                createTone(G5, 0.25, now, 'square', 0.18);
-                createTone(C5, 0.25, now + 0.12, 'square', 0.18);
+            if (beat === 2 || beat === 6) {
+                createTone(G5, 0.2, now, 'square', 0.12);
+                createTone(C5, 0.2, now + 0.1, 'square', 0.12);
             }
-            if (beat === 4 || beat === 20) {
-                createTone(E5, 0.25, now, 'square', 0.18);
-                createTone(G5, 0.25, now + 0.12, 'square', 0.18);
+            if (beat === 8 || beat === 12) {
+                createTone(E5, 0.2, now, 'square', 0.12);
+                createTone(G5, 0.2, now + 0.1, 'square', 0.12);
             }
-            if (beat === 6 || beat === 22) {
-                createTone(C5, 0.25, now, 'square', 0.18);
-                createTone(E5, 0.25, now + 0.12, 'square', 0.18);
-            }
-            
-            // Second phrase (beats 8-15) - variation
-            if (beat === 8 || beat === 24) {
-                createTone(G5, 0.25, now, 'square', 0.18);
-                createTone(C5, 0.25, now + 0.12, 'square', 0.18);
-            }
-            if (beat === 10 || beat === 26) {
-                createTone(E5, 0.25, now, 'square', 0.18);
-                createTone(G5, 0.25, now + 0.12, 'square', 0.18);
-            }
-            if (beat === 12 || beat === 28) {
-                createTone(C5, 0.25, now, 'square', 0.18);
-                createTone(E5, 0.25, now + 0.12, 'square', 0.18);
-            }
-            if (beat === 14 || beat === 30) {
-                createTone(G5, 0.25, now, 'square', 0.18);
-                createTone(C5, 0.25, now + 0.12, 'square', 0.18);
+            if (beat === 10 || beat === 14) {
+                createTone(C5, 0.2, now, 'square', 0.12);
+                createTone(E5, 0.2, now + 0.1, 'square', 0.12);
             }
             
-            // Harmony layer - more varied
+            // Harmony layer
             if (beat % 4 === 0) {
-                createTone(E4, 0.3, now + 0.05, 'triangle', 0.12);
+                createTone(E4, 0.25, now + 0.05, 'triangle', 0.08);
             }
             if (beat % 4 === 2) {
-                createTone(G4, 0.3, now + 0.05, 'triangle', 0.12);
-            }
-            
-            // Additional harmony for variation (every 8 beats)
-            if (beat % 8 === 1) {
-                createTone(A4, 0.2, now + 0.08, 'triangle', 0.10);
-            }
-            if (beat % 8 === 5) {
-                createTone(D4, 0.2, now + 0.08, 'triangle', 0.10);
+                createTone(G4, 0.25, now + 0.05, 'triangle', 0.08);
             }
             
             beatCount++;
@@ -1514,8 +1415,8 @@ function playBossMusic() {
         // Start playing immediately
         playBossLoop();
         
-        // Continue in loop - slower tempo for longer pattern (less repetitive)
-        musicInterval = setInterval(playBossLoop, 450); // 450ms = slower tempo, longer pattern
+        // Continue in loop (faster tempo for Mario style)
+        musicInterval = setInterval(playBossLoop, 200); // 200ms = fast tempo
         
         // Store audio context and interval for cleanup
         gameState.bossAudioContext = audioContext;
@@ -1708,16 +1609,7 @@ document.body.addEventListener('touchmove', (e) => {
     }
 }, { passive: false });
 
-function gameLoop(currentTime) {
-    // Throttle to target FPS for consistent performance
-    const deltaTime = currentTime - lastFrameTime;
-    if (deltaTime < FRAME_TIME && lastFrameTime !== 0) {
-        requestAnimationFrame(gameLoop);
-        return;
-    }
-    lastFrameTime = currentTime;
-    
-    // Clear and redraw
+function gameLoop() {
     drawBackground();
     
     if (gameState.isVictory) {
@@ -1735,11 +1627,8 @@ function gameLoop(currentTime) {
     if (!gameState.isBoss) {
         drawBossCounter();
         
-        // Batch gate position updates
-        const speed = gameState.speed;
-        gameState.gates.forEach(gate => { gate.y += speed; });
+        gameState.gates.forEach(gate => { gate.y += gameState.speed; });
         
-        // Remove off-screen gates more efficiently
         while (gameState.gates.length > 0 && gameState.gates[0].y > canvasHeight + 100) {
             gameState.gates.shift();
             if (gameState.gates.length > 0) {
@@ -1876,5 +1765,4 @@ if (!hasSeenOnboarding) {
     initGame();
 }
 
-// Start game loop with performance optimization
-requestAnimationFrame(gameLoop);
+gameLoop();
