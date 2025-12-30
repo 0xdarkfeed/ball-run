@@ -104,7 +104,7 @@ body {
     text-shadow: 0 0 10px #00ffff;
 }
 
-#retryBtn, #shareBtn, #startGameBtn {
+#retryBtn, #shareBtn, #startGameBtn, #leaderboardBtn {
     padding: 16px 48px;
     min-height: 44px;
     min-width: 120px;
@@ -146,6 +146,22 @@ body {
     box-shadow: 
         0 0 30px #bf00ff,
         0 0 60px #bf00ff;
+}
+
+#leaderboardBtn {
+    color: #00ff88;
+    border-color: #00ff88;
+    box-shadow: 
+        0 0 10px rgba(0, 255, 136, 0.3),
+        inset 0 0 10px rgba(0, 255, 136, 0.1);
+}
+
+#leaderboardBtn:hover, #leaderboardBtn:active {
+    background: #00ff88;
+    color: #0a0a12;
+    box-shadow: 
+        0 0 30px #00ff88,
+        0 0 60px #00ff88;
 }
 
 #bossAlert {
@@ -448,7 +464,7 @@ body {
         font-size: 32px;
     }
     
-    #retryBtn, #shareBtn, #startGameBtn {
+    #retryBtn, #shareBtn, #startGameBtn, #leaderboardBtn {
         padding: 14px 36px;
         font-size: 16px;
         min-height: 44px;

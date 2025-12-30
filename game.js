@@ -1413,8 +1413,41 @@ shareBtn.addEventListener('click', async () => {
         ? `🏆 Ball Run VICTORY!\n\nFully evolved with ${gameState.ballTraits.length} traits!\n\nCan you evolve too?`
         : `🎮 Ball Run!\n\nLevel ${gameState.level} | ${gameState.bossNumber} Bosses | ${gameState.ballTraits.length} traits\n\nBeat me!`;
     
-    try { await sdk.actions.composeCast({ text }); }
-    catch { if (navigator.share) navigator.share({ text }); else { navigator.clipboard.writeText(text); alert('Copied!'); } }
+    try {
+        // Try Farcaster SDK first
+        if (sdk && sdk.actions && sdk.actions.composeCast) {
+            await sdk.actions.composeCast({ text });
+            return;
+        }
+    } catch (error) {
+        console.log('Farcaster share failed:', error);
+    }
+    
+    // Fallback to Web Share API
+    if (navigator.share) {
+        try {
+            await navigator.share({
+                title: 'Ball Run',
+                text: text,
+            });
+            return;
+        } catch (error) {
+            if (error.name !== 'AbortError') {
+                console.log('Web Share failed:', error);
+            } else {
+                return; // User cancelled
+            }
+        }
+    }
+    
+    // Final fallback: Copy to clipboard
+    try {
+        await navigator.clipboard.writeText(text);
+        showNotification('Copied to clipboard! 📋', 'success');
+    } catch (error) {
+        console.error('Clipboard copy failed:', error);
+        showNotification('Share failed. Please copy manually.', 'error');
+    }
 });
 
 // Leaderboard functions
