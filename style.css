@@ -38,7 +38,7 @@ body {
     right: 0;
     display: flex;
     justify-content: space-between;
-    padding: 20px;
+    padding: 15px 20px;
     pointer-events: none;
     z-index: 10;
 }
@@ -55,24 +55,24 @@ body {
 }
 
 #balls {
-    font-size: 20px;
+    font-size: 16px;
     font-weight: 700;
     color: #00d4ff;
     text-shadow: 
-        0 0 10px #00d4ff,
-        0 0 20px #00d4ff,
-        0 0 30px #00d4ff;
+        0 0 8px #00d4ff,
+        0 0 15px #00d4ff;
     letter-spacing: 1px;
     animation: ballCountPulse 2s ease-in-out infinite;
     position: relative;
     display: inline-block;
-    padding: 5px 12px;
+    padding: 4px 10px;
     background: rgba(0, 212, 255, 0.1);
     border: 1px solid rgba(0, 212, 255, 0.3);
-    border-radius: 8px;
+    border-radius: 6px;
     box-shadow: 
-        0 0 15px rgba(0, 212, 255, 0.4),
-        inset 0 0 10px rgba(0, 212, 255, 0.1);
+        0 0 12px rgba(0, 212, 255, 0.4),
+        inset 0 0 8px rgba(0, 212, 255, 0.1);
+    margin-top: 2px;
 }
 
 @keyframes ballCountPulse {

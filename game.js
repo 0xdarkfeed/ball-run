@@ -726,43 +726,43 @@ function drawDroppedSkills() {
 let skillPopup = { text: '', color: '', time: 0 };
 
 function showSkillPopup(skill) {
-    skillPopup = { text: `${skill.name} ACTIVATED!`, color: skill.color, time: Date.now() + 3000 };
+    skillPopup = { text: `${skill.name} ACTIVATED!`, color: skill.color, time: Date.now() + 1200 };
 }
 
 function drawSkillPopup() {
     if (Date.now() < skillPopup.time) {
-        const progress = (skillPopup.time - Date.now()) / 2000;
-        const scale = 1 + (1 - progress) * 0.5;
-        const yPos = canvasHeight / 2;
+        const progress = (skillPopup.time - Date.now()) / 1200;
+        const scale = 1 + (1 - progress) * 0.3;
+        const yPos = canvasHeight * 0.28; // Moved up to avoid boss name and health bar
         
         ctx.save();
         
-        // Background glow
-        ctx.globalAlpha = progress * 0.3;
-        const gradient = ctx.createRadialGradient(canvasWidth / 2, yPos, 0, canvasWidth / 2, yPos, 200);
+        // Background glow (smaller)
+        ctx.globalAlpha = progress * 0.2;
+        const gradient = ctx.createRadialGradient(canvasWidth / 2, yPos, 0, canvasWidth / 2, yPos, 120);
         gradient.addColorStop(0, skillPopup.color);
         gradient.addColorStop(1, 'transparent');
         ctx.fillStyle = gradient;
         ctx.beginPath();
-        ctx.arc(canvasWidth / 2, yPos, 200, 0, Math.PI * 2);
+        ctx.arc(canvasWidth / 2, yPos, 120, 0, Math.PI * 2);
         ctx.fill();
         
-        // Main text with stronger effect
+        // Main text (smaller and shorter duration)
         ctx.globalAlpha = progress;
         ctx.fillStyle = skillPopup.color;
-        ctx.font = `bold ${48 * scale}px Arial`;
+        ctx.font = `bold ${24 * scale}px Arial`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.shadowColor = skillPopup.color;
-        ctx.shadowBlur = 50;
+        ctx.shadowBlur = 30;
         ctx.strokeStyle = '#000000';
-        ctx.lineWidth = 4;
+        ctx.lineWidth = 2;
         ctx.strokeText(skillPopup.text, canvasWidth / 2, yPos);
         ctx.fillText(skillPopup.text, canvasWidth / 2, yPos);
         
-        // Outer glow
-        ctx.shadowBlur = 80;
-        ctx.globalAlpha = progress * 0.5;
+        // Outer glow (smaller)
+        ctx.shadowBlur = 50;
+        ctx.globalAlpha = progress * 0.4;
         ctx.fillText(skillPopup.text, canvasWidth / 2, yPos);
         
         ctx.restore();
@@ -926,7 +926,14 @@ function bossAttack() {
     gameState.lastBossAttack = now;
     
     const boss = gameState.bossType;
-    const projectileCount = 3 + Math.floor(gameState.bossNumber / 2);
+    // Reduce projectile count for higher boss levels to improve performance
+    let baseProjectileCount = 3 + Math.floor(gameState.bossNumber / 2);
+    if (gameState.bossNumber > 5) {
+        baseProjectileCount = Math.min(baseProjectileCount, 5); // Cap at 5 for high levels
+    } else if (gameState.bossNumber > 3) {
+        baseProjectileCount = Math.min(baseProjectileCount, 6); // Cap at 6 for mid levels
+    }
+    const projectileCount = baseProjectileCount;
     
     for (let i = 0; i < projectileCount; i++) {
         const angle = (Math.PI * 0.3) + (Math.PI * 0.4 * i / Math.max(1, projectileCount - 1));
@@ -944,13 +951,21 @@ function bossAttack() {
         });
     }
     
-    createParticles(canvasWidth / 2, gameState.bossY + gameState.bossSize, '255, 100, 100', 10);
+    // Reduce particle count for boss attack
+    const attackParticleCount = gameState.bossNumber > 5 ? 4 : gameState.bossNumber > 3 ? 6 : 10;
+    createParticles(canvasWidth / 2, gameState.bossY + gameState.bossSize, '255, 100, 100', attackParticleCount);
 }
 
 function drawBossProjectiles() {
     const hasShield = gameState.activeSkills.shield && Date.now() < gameState.activeSkills.shield;
     const playerY = canvasHeight - 100;
     const playerX = canvasWidth / 2 + gameState.playerSide * (canvasWidth / 4);
+    
+    // Limit projectiles for performance (especially at higher boss levels)
+    const maxProjectiles = gameState.bossNumber > 5 ? 8 : gameState.bossNumber > 3 ? 12 : 20;
+    if (gameState.bossProjectiles.length > maxProjectiles) {
+        gameState.bossProjectiles = gameState.bossProjectiles.slice(-maxProjectiles);
+    }
     
     gameState.bossProjectiles = gameState.bossProjectiles.filter(proj => {
         proj.x += proj.vx;
@@ -970,7 +985,9 @@ function drawBossProjectiles() {
             if (gameState.balls < 0) gameState.balls = 0;
             syncPlayerBalls();
             updateUI();
-            createParticles(proj.x, proj.y, '255, 100, 100', 12);
+            // Reduce collision particles for performance
+            const collisionParticleCount = gameState.bossNumber > 5 ? 5 : gameState.bossNumber > 3 ? 8 : 12;
+            createParticles(proj.x, proj.y, '255, 100, 100', collisionParticleCount);
             
             if (gameState.balls <= 0) endGame();
             return false;
