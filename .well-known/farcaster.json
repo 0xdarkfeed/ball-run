@@ -21,6 +21,7 @@
     "screenshotUrls": ["https://ball-run-teal.vercel.app/preview.png"],
     "ogTitle": "Ball Run - Neon Runner Game",
     "ogDescription": "A TRON-inspired endless runner. Choose your gates wisely!",
-    "ogImageUrl": "https://ball-run-teal.vercel.app/preview.png"
+    "ogImageUrl": "https://ball-run-teal.vercel.app/preview.png",
+    "noindex": false
   }
 }

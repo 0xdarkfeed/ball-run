@@ -15,6 +15,7 @@ const bossAlertEl = document.getElementById('bossAlert');
 const bossEmojiEl = document.getElementById('bossEmoji');
 const onboardingEl = document.getElementById('onboarding');
 const startGameBtn = document.getElementById('startGameBtn');
+const bossMusicEl = document.getElementById('bossMusic');
 const API_BASE_URL = window.location.origin;
 
 const MAX_VISUAL_BALLS = 40;
@@ -88,7 +89,8 @@ let gameState = {
     ballColor: '#00ffff',
     ballColorSecondary: '#0066ff',
     ballTraits: [],
-    isHolding: false
+    isHolding: false,
+    bossAudioContext: null
 };
 
 let canvasWidth, canvasHeight;
@@ -157,9 +159,10 @@ function initGame() {
         defeatedBosses: [],
         ballColor: '#00ffff',
         ballColorSecondary: '#0066ff',
-        ballTraits: [],
-        isHolding: false
-    };
+    ballTraits: [],
+    isHolding: false,
+    bossAudioContext: null
+};
     
     createPlayerBalls();
     generateGates();
@@ -167,6 +170,13 @@ function initGame() {
     gameOverEl.classList.add('hidden');
     bossAlertEl.classList.add('hidden');
     bossEmojiEl.classList.add('hidden');
+    
+    // Clear ash effect
+    const ashContainer = document.getElementById('ashContainer');
+    if (ashContainer) ashContainer.innerHTML = '';
+    
+    // Stop boss music if playing
+    stopBossMusic();
 }
 
 function createPlayerBalls() {
@@ -224,7 +234,18 @@ function addGate(y) {
 
 function updateUI() {
     levelEl.textContent = `LEVEL ${gameState.level}`;
+    
+    // Ball count with animation
+    const oldBalls = parseInt(ballsEl.textContent.match(/\d+/)?.[0] || gameState.balls);
     ballsEl.textContent = `🔵 ${gameState.balls}`;
+    
+    // Add pulse animation when balls change
+    if (oldBalls !== gameState.balls) {
+        ballsEl.style.animation = 'none';
+        setTimeout(() => {
+            ballsEl.style.animation = 'ballCountChange 0.3s ease-out, ballCountPulse 2s ease-in-out infinite 0.3s';
+        }, 10);
+    }
 }
 
 function drawBackground() {
@@ -705,23 +726,45 @@ function drawDroppedSkills() {
 let skillPopup = { text: '', color: '', time: 0 };
 
 function showSkillPopup(skill) {
-    skillPopup = { text: `${skill.name} ACTIVATED!`, color: skill.color, time: Date.now() + 2000 };
+    skillPopup = { text: `${skill.name} ACTIVATED!`, color: skill.color, time: Date.now() + 3000 };
 }
 
 function drawSkillPopup() {
     if (Date.now() < skillPopup.time) {
         const progress = (skillPopup.time - Date.now()) / 2000;
-        const scale = 1 + (1 - progress) * 0.3;
+        const scale = 1 + (1 - progress) * 0.5;
+        const yPos = canvasHeight / 2;
         
         ctx.save();
+        
+        // Background glow
+        ctx.globalAlpha = progress * 0.3;
+        const gradient = ctx.createRadialGradient(canvasWidth / 2, yPos, 0, canvasWidth / 2, yPos, 200);
+        gradient.addColorStop(0, skillPopup.color);
+        gradient.addColorStop(1, 'transparent');
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(canvasWidth / 2, yPos, 200, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Main text with stronger effect
         ctx.globalAlpha = progress;
         ctx.fillStyle = skillPopup.color;
-        ctx.font = `bold ${26 * scale}px Arial`;
+        ctx.font = `bold ${48 * scale}px Arial`;
         ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
         ctx.shadowColor = skillPopup.color;
-        ctx.shadowBlur = 30;
-        ctx.fillText(skillPopup.text, canvasWidth / 2, canvasHeight / 2 - 30);
-        ctx.shadowBlur = 0;
+        ctx.shadowBlur = 50;
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 4;
+        ctx.strokeText(skillPopup.text, canvasWidth / 2, yPos);
+        ctx.fillText(skillPopup.text, canvasWidth / 2, yPos);
+        
+        // Outer glow
+        ctx.shadowBlur = 80;
+        ctx.globalAlpha = progress * 0.5;
+        ctx.fillText(skillPopup.text, canvasWidth / 2, yPos);
+        
         ctx.restore();
     }
 }
@@ -995,6 +1038,9 @@ function defeatBoss() {
         gameState.ballTraits.push(boss.trait);
     }
     
+    // Stop boss music
+    stopBossMusic();
+    
     gameState.isBoss = false;
     gameState.bossProjectiles = [];
     gameState.droppedSkills = [];
@@ -1206,15 +1252,149 @@ function startBoss() {
     
     bossAlertEl.classList.remove('hidden');
     setTimeout(() => { if (gameState.isBoss) bossAlertEl.classList.add('hidden'); }, 1500);
+    
+    // Start boss music
+    playBossMusic();
+}
+
+function playBossMusic() {
+    // Stop any existing music first
+    stopBossMusic();
+    
+    try {
+        // Create boss music using Web Audio API
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Create a simple intense boss theme with multiple layers
+        const createBossTone = (freq, duration, startTime, type = 'sawtooth', volume = 0.1) => {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = freq;
+            oscillator.type = type;
+            
+            gainNode.gain.setValueAtTime(0, startTime);
+            gainNode.gain.linearRampToValueAtTime(volume, startTime + 0.05);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+            
+            oscillator.start(startTime);
+            oscillator.stop(startTime + duration);
+        };
+        
+        // Create intense boss music pattern - more dramatic
+        const baseFreq = 60;
+        let musicInterval;
+        
+        const playBossLoop = () => {
+            if (!gameState.isBoss || !gameState.isPlaying) {
+                if (musicInterval) clearInterval(musicInterval);
+                return;
+            }
+            
+            const now = audioContext.currentTime;
+            
+            // Low bass line
+            createBossTone(baseFreq, 0.4, now, 'sawtooth', 0.12);
+            createBossTone(baseFreq * 1.5, 0.3, now + 0.2, 'sawtooth', 0.1);
+            createBossTone(baseFreq * 2, 0.35, now + 0.4, 'sawtooth', 0.1);
+            
+            // Mid range
+            createBossTone(baseFreq * 3, 0.25, now + 0.1, 'square', 0.08);
+            createBossTone(baseFreq * 4, 0.2, now + 0.3, 'square', 0.08);
+            
+            // High accent
+            createBossTone(baseFreq * 6, 0.15, now + 0.5, 'triangle', 0.06);
+        };
+        
+        // Start playing immediately
+        playBossLoop();
+        
+        // Continue in loop
+        musicInterval = setInterval(playBossLoop, 600);
+        
+        // Store audio context and interval for cleanup
+        gameState.bossAudioContext = audioContext;
+        gameState.bossMusicInterval = musicInterval;
+    } catch (error) {
+        console.log('Boss music not available:', error);
+    }
+}
+
+function stopBossMusic() {
+    if (gameState.bossMusicInterval) {
+        clearInterval(gameState.bossMusicInterval);
+        gameState.bossMusicInterval = null;
+    }
+    
+    if (gameState.bossAudioContext) {
+        try {
+            gameState.bossAudioContext.close();
+            gameState.bossAudioContext = null;
+        } catch (error) {
+            console.log('Error stopping music:', error);
+        }
+    }
 }
 
 function endGame() {
     gameState.isPlaying = false;
     gameState.isHolding = false;
     stopHolding();
+    stopBossMusic();
     finalLevelEl.textContent = `Level: ${gameState.level} | Bosses: ${gameState.bossNumber}`;
     gameOverEl.classList.remove('hidden');
     bossEmojiEl.classList.add('hidden');
+    
+    // Start ash effect
+    startAshEffect();
+}
+
+function startAshEffect() {
+    const ashContainer = document.getElementById('ashContainer');
+    if (!ashContainer) return;
+    
+    // Clear previous ash
+    ashContainer.innerHTML = '';
+    
+    // Create ash particles
+    const particleCount = 50;
+    for (let i = 0; i < particleCount; i++) {
+        setTimeout(() => {
+            const ash = document.createElement('div');
+            ash.className = 'ash-particle';
+            ash.style.left = `${Math.random() * 100}%`;
+            ash.style.animationDuration = `${3 + Math.random() * 4}s`;
+            ash.style.animationDelay = `${Math.random() * 2}s`;
+            ashContainer.appendChild(ash);
+            
+            // Remove after animation
+            setTimeout(() => {
+                if (ash.parentNode) ash.remove();
+            }, 7000);
+        }, i * 100);
+    }
+    
+    // Continuously add more ash
+    const ashInterval = setInterval(() => {
+        if (gameOverEl.classList.contains('hidden')) {
+            clearInterval(ashInterval);
+            return;
+        }
+        
+        const ash = document.createElement('div');
+        ash.className = 'ash-particle';
+        ash.style.left = `${Math.random() * 100}%`;
+        ash.style.animationDuration = `${3 + Math.random() * 4}s`;
+        ash.style.animationDelay = '0s';
+        ashContainer.appendChild(ash);
+        
+        setTimeout(() => {
+            if (ash.parentNode) ash.remove();
+        }, 7000);
+    }, 300);
 }
 
 // Controls - Tek tıklama = tek ateş, basılı tutma = sürekli ateş
@@ -1424,7 +1604,7 @@ shareBtn.addEventListener('click', async () => {
     }
     
     // Fallback to Web Share API
-    if (navigator.share) {
+        if (navigator.share) {
         try {
             await navigator.share({
                 title: 'Ball Run',
@@ -1434,7 +1614,7 @@ shareBtn.addEventListener('click', async () => {
         } catch (error) {
             if (error.name !== 'AbortError') {
                 console.log('Web Share failed:', error);
-            } else {
+        } else {
                 return; // User cancelled
             }
         }

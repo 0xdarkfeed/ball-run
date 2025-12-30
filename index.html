@@ -5,6 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="fc:frame" content="vNext">
     <meta name="base:app_id" content="695367eec63ad876c9081918">
+    <meta name="fc:miniapp" content='{"version":"next","imageUrl":"https://ball-run-teal.vercel.app/preview.png","button":{"title":"Play Ball Run","action":{"type":"launch_frame","url":"https://ball-run-teal.vercel.app","name":"Ball Run","splashImageUrl":"https://ball-run-teal.vercel.app/icon.png","splashBackgroundColor":"#0a0a12"}}}'>
+    <meta property="og:title" content="Ball Run - Neon Runner Game">
+    <meta property="og:description" content="A TRON-inspired endless runner game. Swipe to choose gates and change your ball count. Survive the boss every 5 levels!">
+    <meta property="og:image" content="https://ball-run-teal.vercel.app/preview.png">
+    <meta property="og:url" content="https://ball-run-teal.vercel.app">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Ball Run - Neon Runner Game">
+    <meta name="twitter:description" content="A TRON-inspired endless runner game. Swipe to choose gates and change your ball count. Survive the boss every 5 levels!">
+    <meta name="twitter:image" content="https://ball-run-teal.vercel.app/preview.png">
     <title>Ball Run</title>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -16,6 +26,7 @@
             <div id="balls">🔵 10</div>
         </div>
         <div id="gameOver" class="hidden">
+            <div id="ashContainer"></div>
             <div class="game-over-content">
                 <h1>GAME OVER</h1>
                 <p id="finalLevel">Level: 1</p>
@@ -42,6 +53,7 @@
             </div>
         </div>
     </div>
+    <audio id="bossMusic" loop></audio>
     <script type="module" src="game.js"></script>
 </body>
 </html>

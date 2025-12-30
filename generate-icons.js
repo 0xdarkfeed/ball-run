@@ -96,18 +96,18 @@ const iconBuffer = iconCanvas.toBuffer('image/png');
 fs.writeFileSync('icon.png', iconBuffer);
 console.log('✓ icon.png created (1024x1024)');
 
-// Generate preview.png (1200x630 for Base cover photo requirements)
-const previewCanvas = createCanvas(1200, 630);
+// Generate preview.png (1200x800 for Base embed - 3:2 aspect ratio)
+const previewCanvas = createCanvas(1200, 800);
 const previewCtx = previewCanvas.getContext('2d');
 
 // Background (no transparency)
 previewCtx.fillStyle = '#0a0a12';
-previewCtx.fillRect(0, 0, 1200, 630);
+previewCtx.fillRect(0, 0, 1200, 800);
 
 // Grid (scaled)
 previewCtx.strokeStyle = 'rgba(0, 255, 255, 0.1)';
 previewCtx.lineWidth = 2;
-for (let y = 0; y < 630; y += 50) {
+for (let y = 0; y < 800; y += 50) {
     previewCtx.beginPath();
     previewCtx.moveTo(0, y);
     previewCtx.lineTo(1200, y);
@@ -116,66 +116,66 @@ for (let y = 0; y < 630; y += 50) {
 for (let x = 0; x < 1200; x += 50) {
     previewCtx.beginPath();
     previewCtx.moveTo(x, 0);
-    previewCtx.lineTo(x, 630);
+    previewCtx.lineTo(x, 800);
     previewCtx.stroke();
 }
 
 // Side borders (scaled)
-const previewGradient = previewCtx.createLinearGradient(0, 0, 0, 630);
+const previewGradient = previewCtx.createLinearGradient(0, 0, 0, 800);
 previewGradient.addColorStop(0, '#00ffff');
 previewGradient.addColorStop(1, '#bf00ff');
 previewCtx.strokeStyle = previewGradient;
 previewCtx.lineWidth = 8;
 previewCtx.beginPath();
 previewCtx.moveTo(4, 0);
-previewCtx.lineTo(4, 630);
+previewCtx.lineTo(4, 800);
 previewCtx.stroke();
 previewCtx.beginPath();
 previewCtx.moveTo(1196, 0);
-previewCtx.lineTo(1196, 630);
+previewCtx.lineTo(1196, 800);
 previewCtx.stroke();
 
-// Gates (scaled)
+// Gates (scaled for 3:2 ratio)
 // Left gate
 previewCtx.fillStyle = 'rgba(10, 10, 20, 0.8)';
-previewCtx.fillRect(40, 150, 540, 140);
+previewCtx.fillRect(40, 200, 540, 140);
 previewCtx.strokeStyle = '#00ff88';
 previewCtx.lineWidth = 6;
-previewCtx.strokeRect(40, 150, 540, 140);
+previewCtx.strokeRect(40, 200, 540, 140);
 previewCtx.fillStyle = '#00ff88';
 previewCtx.font = 'bold 64px Courier New';
 previewCtx.textAlign = 'center';
 previewCtx.shadowColor = '#00ff88';
 previewCtx.shadowBlur = 30;
-previewCtx.fillText('+5', 310, 250);
+previewCtx.fillText('+5', 310, 300);
 previewCtx.shadowBlur = 0;
 
 // Right gate
 previewCtx.fillStyle = 'rgba(10, 10, 20, 0.8)';
-previewCtx.fillRect(620, 150, 540, 140);
+previewCtx.fillRect(620, 200, 540, 140);
 previewCtx.strokeStyle = '#00ffff';
 previewCtx.lineWidth = 6;
-previewCtx.strokeRect(620, 150, 540, 140);
+previewCtx.strokeRect(620, 200, 540, 140);
 previewCtx.fillStyle = '#00ffff';
 previewCtx.shadowColor = '#00ffff';
-previewCtx.fillText('x2', 890, 250);
+previewCtx.fillText('x2', 890, 300);
 previewCtx.shadowBlur = 0;
 
 // Divider
 previewCtx.fillStyle = '#bf00ff';
 previewCtx.shadowColor = '#bf00ff';
 previewCtx.shadowBlur = 30;
-previewCtx.fillRect(596, 150, 8, 140);
+previewCtx.fillRect(596, 200, 8, 140);
 previewCtx.shadowBlur = 0;
 
 // Player balls (scaled)
-drawNeonBall(previewCtx, 600, 500, 50, '#00ffff', '#0066ff');
-drawNeonBall(previewCtx, 510, 540, 36, '#00ffff', '#0066ff');
-drawNeonBall(previewCtx, 690, 540, 36, '#00ffff', '#0066ff');
-drawNeonBall(previewCtx, 460, 570, 28, '#00ffff', '#0066ff');
-drawNeonBall(previewCtx, 560, 570, 28, '#00ffff', '#0066ff');
-drawNeonBall(previewCtx, 640, 570, 28, '#00ffff', '#0066ff');
-drawNeonBall(previewCtx, 740, 570, 28, '#00ffff', '#0066ff');
+drawNeonBall(previewCtx, 600, 600, 50, '#00ffff', '#0066ff');
+drawNeonBall(previewCtx, 510, 640, 36, '#00ffff', '#0066ff');
+drawNeonBall(previewCtx, 690, 640, 36, '#00ffff', '#0066ff');
+drawNeonBall(previewCtx, 460, 670, 28, '#00ffff', '#0066ff');
+drawNeonBall(previewCtx, 560, 670, 28, '#00ffff', '#0066ff');
+drawNeonBall(previewCtx, 640, 670, 28, '#00ffff', '#0066ff');
+drawNeonBall(previewCtx, 740, 670, 28, '#00ffff', '#0066ff');
 
 // Title (scaled)
 previewCtx.fillStyle = '#00ffff';
@@ -183,7 +183,7 @@ previewCtx.font = 'bold 72px Courier New';
 previewCtx.textAlign = 'center';
 previewCtx.shadowColor = '#00ffff';
 previewCtx.shadowBlur = 40;
-previewCtx.fillText('BALL RUN', 600, 80);
+previewCtx.fillText('BALL RUN', 600, 100);
 previewCtx.shadowBlur = 0;
 
 // Subtitle (scaled)
@@ -191,12 +191,12 @@ previewCtx.fillStyle = '#bf00ff';
 previewCtx.font = '32px Courier New';
 previewCtx.shadowColor = '#bf00ff';
 previewCtx.shadowBlur = 20;
-previewCtx.fillText('Swipe to choose gates • Survive the boss!', 600, 600);
+previewCtx.fillText('Swipe to choose gates • Survive the boss!', 600, 750);
 previewCtx.shadowBlur = 0;
 
 // Save preview.png
 const previewBuffer = previewCanvas.toBuffer('image/png');
 fs.writeFileSync('preview.png', previewBuffer);
-console.log('✓ preview.png created (1200x630)');
+console.log('✓ preview.png created (1200x800 - 3:2 aspect ratio for Base embed)');
 console.log('\nAll icons generated successfully!');
 console.log('\nNote: Screenshots (1284x2778) need to be created manually or via browser automation.');
