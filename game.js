@@ -1404,8 +1404,8 @@ function playBossMusic() {
         // Create boss music using Web Audio API - Mario style!
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
         
-        // Create a melodic tone (Mario boss style)
-        const createTone = (freq, duration, startTime, type = 'square', volume = 0.12) => {
+        // Create a melodic tone (Mario boss style) - louder volume
+        const createTone = (freq, duration, startTime, type = 'square', volume = 0.18) => {
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
             
@@ -1431,9 +1431,12 @@ function playBossMusic() {
         const C5 = 523.25;  // C (octave)
         const E5 = 659.25;  // E (octave)
         const G5 = 783.99;  // G (octave)
+        const A4 = 440.00;  // A (for variation)
+        const D4 = 293.66;  // D (for variation)
         
         let musicInterval;
         let beatCount = 0;
+        const PATTERN_LENGTH = 32; // Longer pattern (32 beats instead of 16)
         
         const playBossLoop = () => {
             if (!gameState.isBoss || !gameState.isPlaying) {
@@ -1442,40 +1445,67 @@ function playBossMusic() {
             }
             
             const now = audioContext.currentTime;
-            const beat = beatCount % 16; // 16-beat pattern
+            const beat = beatCount % PATTERN_LENGTH;
             
-            // Bass line (lower octave)
+            // Bass line (lower octave) - stronger
             if (beat % 4 === 0) {
-                createTone(C4 * 0.5, 0.3, now, 'square', 0.15);
+                createTone(C4 * 0.5, 0.4, now, 'square', 0.20);
             }
             if (beat % 4 === 2) {
-                createTone(G4 * 0.5, 0.3, now, 'square', 0.15);
+                createTone(G4 * 0.5, 0.4, now, 'square', 0.20);
             }
             
-            // Melody line - Mario boss theme pattern
-            if (beat === 0 || beat === 4) {
-                createTone(C5, 0.2, now, 'square', 0.12);
-                createTone(E5, 0.2, now + 0.1, 'square', 0.12);
+            // Extended melody line - Mario boss theme pattern (longer variation)
+            // First phrase (beats 0-7)
+            if (beat === 0 || beat === 16) {
+                createTone(C5, 0.25, now, 'square', 0.18);
+                createTone(E5, 0.25, now + 0.12, 'square', 0.18);
             }
-            if (beat === 2 || beat === 6) {
-                createTone(G5, 0.2, now, 'square', 0.12);
-                createTone(C5, 0.2, now + 0.1, 'square', 0.12);
+            if (beat === 2 || beat === 18) {
+                createTone(G5, 0.25, now, 'square', 0.18);
+                createTone(C5, 0.25, now + 0.12, 'square', 0.18);
             }
-            if (beat === 8 || beat === 12) {
-                createTone(E5, 0.2, now, 'square', 0.12);
-                createTone(G5, 0.2, now + 0.1, 'square', 0.12);
+            if (beat === 4 || beat === 20) {
+                createTone(E5, 0.25, now, 'square', 0.18);
+                createTone(G5, 0.25, now + 0.12, 'square', 0.18);
             }
-            if (beat === 10 || beat === 14) {
-                createTone(C5, 0.2, now, 'square', 0.12);
-                createTone(E5, 0.2, now + 0.1, 'square', 0.12);
+            if (beat === 6 || beat === 22) {
+                createTone(C5, 0.25, now, 'square', 0.18);
+                createTone(E5, 0.25, now + 0.12, 'square', 0.18);
             }
             
-            // Harmony layer
+            // Second phrase (beats 8-15) - variation
+            if (beat === 8 || beat === 24) {
+                createTone(G5, 0.25, now, 'square', 0.18);
+                createTone(C5, 0.25, now + 0.12, 'square', 0.18);
+            }
+            if (beat === 10 || beat === 26) {
+                createTone(E5, 0.25, now, 'square', 0.18);
+                createTone(G5, 0.25, now + 0.12, 'square', 0.18);
+            }
+            if (beat === 12 || beat === 28) {
+                createTone(C5, 0.25, now, 'square', 0.18);
+                createTone(E5, 0.25, now + 0.12, 'square', 0.18);
+            }
+            if (beat === 14 || beat === 30) {
+                createTone(G5, 0.25, now, 'square', 0.18);
+                createTone(C5, 0.25, now + 0.12, 'square', 0.18);
+            }
+            
+            // Harmony layer - more varied
             if (beat % 4 === 0) {
-                createTone(E4, 0.25, now + 0.05, 'triangle', 0.08);
+                createTone(E4, 0.3, now + 0.05, 'triangle', 0.12);
             }
             if (beat % 4 === 2) {
-                createTone(G4, 0.25, now + 0.05, 'triangle', 0.08);
+                createTone(G4, 0.3, now + 0.05, 'triangle', 0.12);
+            }
+            
+            // Additional harmony for variation (every 8 beats)
+            if (beat % 8 === 1) {
+                createTone(A4, 0.2, now + 0.08, 'triangle', 0.10);
+            }
+            if (beat % 8 === 5) {
+                createTone(D4, 0.2, now + 0.08, 'triangle', 0.10);
             }
             
             beatCount++;
@@ -1484,8 +1514,8 @@ function playBossMusic() {
         // Start playing immediately
         playBossLoop();
         
-        // Continue in loop (faster tempo for Mario style)
-        musicInterval = setInterval(playBossLoop, 200); // 200ms = fast tempo
+        // Continue in loop - slower tempo for longer pattern (less repetitive)
+        musicInterval = setInterval(playBossLoop, 450); // 450ms = slower tempo, longer pattern
         
         // Store audio context and interval for cleanup
         gameState.bossAudioContext = audioContext;
