@@ -15,6 +15,15 @@ const bossAlertEl = document.getElementById('bossAlert');
 const bossEmojiEl = document.getElementById('bossEmoji');
 const onboardingEl = document.getElementById('onboarding');
 const startGameBtn = document.getElementById('startGameBtn');
+const leaderboardEl = document.getElementById('leaderboard');
+const leaderboardListEl = document.getElementById('leaderboardList');
+const leaderboardLoadingEl = document.getElementById('leaderboardLoading');
+const closeLeaderboardBtn = document.getElementById('closeLeaderboard');
+
+// Leaderboard contract address (set after deployment)
+// TODO: Replace with your deployed contract address
+const LEADERBOARD_CONTRACT = ''; // Example: '0x1234...'
+const API_BASE_URL = window.location.origin;
 
 const MAX_VISUAL_BALLS = 40;
 const FINAL_BOSS_NUMBER = 10;
@@ -1407,6 +1416,166 @@ shareBtn.addEventListener('click', async () => {
     try { await sdk.actions.composeCast({ text }); }
     catch { if (navigator.share) navigator.share({ text }); else { navigator.clipboard.writeText(text); alert('Copied!'); } }
 });
+
+// Leaderboard functions
+async function submitScoreToBlockchain() {
+    if (!LEADERBOARD_CONTRACT) {
+        console.log('Leaderboard contract not configured');
+        return;
+    }
+
+    try {
+        // Get user's wallet address from Base App context
+        const userAddress = await getBaseAccountAddress();
+        
+        if (!userAddress) {
+            console.log('No wallet address available');
+            return;
+        }
+
+        const response = await fetch(`${API_BASE_URL}/api/submit-score`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                playerAddress: userAddress,
+                level: gameState.level,
+                balls: gameState.balls,
+                bosses: gameState.bossNumber,
+                contractAddress: LEADERBOARD_CONTRACT,
+            }),
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+            console.log('Score submitted:', result.transactionHash);
+            // Show success message
+            showNotification('Score saved to blockchain! 🎉', 'success');
+        } else {
+            console.error('Failed to submit score:', result.error);
+            showNotification('Failed to save score', 'error');
+        }
+    } catch (error) {
+        console.error('Error submitting score:', error);
+        showNotification('Error saving score', 'error');
+    }
+}
+
+async function getBaseAccountAddress() {
+    try {
+        // Try to get address from Base App context
+        if (window.ethereum) {
+            const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+            if (accounts && accounts.length > 0) {
+                return accounts[0];
+            }
+        }
+        
+        // Try Farcaster SDK
+        if (sdk && sdk.context) {
+            const context = await sdk.context;
+            if (context && context.connectedAddress) {
+                return context.connectedAddress;
+            }
+        }
+        
+        return null;
+    } catch (error) {
+        console.error('Error getting address:', error);
+        return null;
+    }
+}
+
+async function loadLeaderboard() {
+    if (!LEADERBOARD_CONTRACT) {
+        leaderboardListEl.innerHTML = '<p style="color: #ff0066; text-align: center;">Leaderboard contract not configured</p>';
+        leaderboardLoadingEl.classList.add('hidden');
+        return;
+    }
+
+    leaderboardLoadingEl.classList.remove('hidden');
+    leaderboardListEl.innerHTML = '';
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/get-leaderboard?contractAddress=${LEADERBOARD_CONTRACT}&count=20`);
+        const result = await response.json();
+
+        leaderboardLoadingEl.classList.add('hidden');
+
+        if (result.success && result.scores && result.scores.length > 0) {
+            result.scores.forEach((score, index) => {
+                const item = document.createElement('div');
+                item.className = `leaderboard-item rank-${index < 3 ? index + 1 : ''}`;
+                
+                const shortAddress = `${score.player.slice(0, 6)}...${score.player.slice(-4)}`;
+                
+                item.innerHTML = `
+                    <div class="leaderboard-rank">#${score.rank}</div>
+                    <div class="leaderboard-info">
+                        <div class="leaderboard-player">${shortAddress}</div>
+                        <div class="leaderboard-stats">
+                            <span>Level: ${score.level}</span>
+                            <span>Balls: ${score.balls}</span>
+                            <span>Bosses: ${score.bosses}</span>
+                        </div>
+                    </div>
+                `;
+                
+                leaderboardListEl.appendChild(item);
+            });
+        } else {
+            leaderboardListEl.innerHTML = '<p style="color: #cccccc; text-align: center;">No scores yet. Be the first!</p>';
+        }
+    } catch (error) {
+        console.error('Error loading leaderboard:', error);
+        leaderboardLoadingEl.classList.add('hidden');
+        leaderboardListEl.innerHTML = '<p style="color: #ff0066; text-align: center;">Error loading leaderboard</p>';
+    }
+}
+
+function showLeaderboard() {
+    leaderboardEl.classList.remove('hidden');
+    loadLeaderboard();
+}
+
+function hideLeaderboard() {
+    leaderboardEl.classList.add('hidden');
+}
+
+function showNotification(message, type = 'info') {
+    // Simple notification (can be enhanced)
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${type === 'success' ? '#00ff88' : type === 'error' ? '#ff0066' : '#00ffff'};
+        color: #0a0a12;
+        padding: 15px 25px;
+        border-radius: 8px;
+        z-index: 1000;
+        font-weight: bold;
+        box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+    `;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
+
+// Leaderboard button event listener
+const leaderboardBtn = document.getElementById('leaderboardBtn');
+if (leaderboardBtn) {
+    leaderboardBtn.addEventListener('click', showLeaderboard);
+}
+
+if (closeLeaderboardBtn) {
+    closeLeaderboardBtn.addEventListener('click', hideLeaderboard);
+}
 
 // Show onboarding on first load
 const hasSeenOnboarding = localStorage.getItem('ballRunOnboarding');
