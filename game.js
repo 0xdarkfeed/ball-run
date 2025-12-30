@@ -832,11 +832,35 @@ function drawBoss() {
     ctx.fill();
     
     // Emoji boss as HTML overlay (for Apple compatibility)
-    const canvasRect = canvas.getBoundingClientRect();
-    const emojiY = canvasRect.top + bossY;
-    bossEmojiEl.textContent = boss.emoji;
+    // Pozisyonu game container'a göre hesapla
+    const gameContainer = document.getElementById('game');
+    if (!gameContainer) return;
+    
+    // Canvas'ın container içindeki pozisyonunu hesapla
+    // Canvas ve container aynı boyutta olduğu için direkt bossY kullanabiliriz
+    const relativeY = bossY;
+    
+    // Emoji'yi set et - Apple için özel format
+    bossEmojiEl.innerHTML = `<span style="font-size: inherit; display: inline-block;">${boss.emoji}</span>`;
+    bossEmojiEl.setAttribute('aria-label', boss.name);
+    
+    // Stil ayarları - Apple için optimize edilmiş
     bossEmojiEl.style.color = boss.color;
-    bossEmojiEl.style.top = `${emojiY}px`;
+    bossEmojiEl.style.top = `${relativeY}px`;
+    bossEmojiEl.style.left = '50%';
+    bossEmojiEl.style.fontSize = `${Math.max(140, size * 2.8)}px`;
+    bossEmojiEl.style.transform = 'translateX(-50%) translateY(-50%)';
+    bossEmojiEl.style.webkitTransform = 'translateX(-50%) translateY(-50%)';
+    bossEmojiEl.style.marginTop = '0';
+    
+    // Apple için özel ayarlar
+    bossEmojiEl.style.textRendering = 'optimizeLegibility';
+    bossEmojiEl.style.fontFeatureSettings = '"liga" 1, "kern" 1';
+    bossEmojiEl.style.webkitTextSizeAdjust = '100%';
+    
+    // Force reflow for Apple devices
+    void bossEmojiEl.offsetHeight;
+    
     bossEmojiEl.classList.remove('hidden');
 }
 
