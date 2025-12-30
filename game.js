@@ -13,6 +13,8 @@ const retryBtn = document.getElementById('retryBtn');
 const shareBtn = document.getElementById('shareBtn');
 const bossAlertEl = document.getElementById('bossAlert');
 const bossEmojiEl = document.getElementById('bossEmoji');
+const onboardingEl = document.getElementById('onboarding');
+const startGameBtn = document.getElementById('startGameBtn');
 
 const MAX_VISUAL_BALLS = 40;
 const FINAL_BOSS_NUMBER = 10;
@@ -1389,6 +1391,14 @@ function gameLoop() {
 
 retryBtn.addEventListener('click', () => { stopHolding(); initGame(); });
 
+startGameBtn.addEventListener('click', () => {
+    onboardingEl.classList.add('hidden');
+    localStorage.setItem('ballRunOnboarding', 'true');
+    if (!gameState.isPlaying) {
+        initGame();
+    }
+});
+
 shareBtn.addEventListener('click', async () => {
     const text = gameState.bossNumber >= FINAL_BOSS_NUMBER 
         ? `🏆 Ball Run VICTORY!\n\nFully evolved with ${gameState.ballTraits.length} traits!\n\nCan you evolve too?`
@@ -1398,5 +1408,13 @@ shareBtn.addEventListener('click', async () => {
     catch { if (navigator.share) navigator.share({ text }); else { navigator.clipboard.writeText(text); alert('Copied!'); } }
 });
 
-initGame();
+// Show onboarding on first load
+const hasSeenOnboarding = localStorage.getItem('ballRunOnboarding');
+if (!hasSeenOnboarding) {
+    onboardingEl.classList.remove('hidden');
+    gameState.isPlaying = false;
+} else {
+    initGame();
+}
+
 gameLoop();

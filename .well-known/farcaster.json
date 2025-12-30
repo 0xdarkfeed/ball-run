@@ -7,7 +7,7 @@
   "frame": {
     "version": "1",
     "name": "Ball Run",
-    "subtitle": "Neon Runner Game",
+    "subtitle": "Neon runner game",
     "description": "A TRON-inspired endless runner game. Swipe to choose gates and change your ball count. Survive the boss every 5 levels!",
     "iconUrl": "https://ball-run-teal.vercel.app/icon.png",
     "homeUrl": "https://ball-run-teal.vercel.app",

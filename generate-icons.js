@@ -48,154 +48,155 @@ function drawGrid(ctx, w, h) {
     }
 }
 
-// Generate icon.png (200x200)
-const iconCanvas = createCanvas(200, 200);
+// Generate icon.png (1024x1024 for Base featured requirements)
+const iconCanvas = createCanvas(1024, 1024);
 const iconCtx = iconCanvas.getContext('2d');
 
-// Background
+// Background (no transparency for Base requirements)
 iconCtx.fillStyle = '#0a0a12';
-iconCtx.fillRect(0, 0, 200, 200);
+iconCtx.fillRect(0, 0, 1024, 1024);
 
 // Grid
-drawGrid(iconCtx, 200, 200);
+drawGrid(iconCtx, 1024, 1024);
 
 // Side borders
-const gradient = iconCtx.createLinearGradient(0, 0, 0, 200);
+const gradient = iconCtx.createLinearGradient(0, 0, 0, 1024);
 gradient.addColorStop(0, '#00ffff');
 gradient.addColorStop(1, '#bf00ff');
 iconCtx.strokeStyle = gradient;
-iconCtx.lineWidth = 4;
+iconCtx.lineWidth = 20;
 iconCtx.beginPath();
-iconCtx.moveTo(2, 0);
-iconCtx.lineTo(2, 200);
+iconCtx.moveTo(10, 0);
+iconCtx.lineTo(10, 1024);
 iconCtx.stroke();
 iconCtx.beginPath();
-iconCtx.moveTo(198, 0);
-iconCtx.lineTo(198, 200);
+iconCtx.moveTo(1014, 0);
+iconCtx.lineTo(1014, 1024);
 iconCtx.stroke();
 
-// Main ball
-drawNeonBall(iconCtx, 100, 110, 35, '#00ffff', '#0066ff');
+// Main ball (scaled up)
+drawNeonBall(iconCtx, 512, 560, 180, '#00ffff', '#0066ff');
 
-// Smaller balls
-drawNeonBall(iconCtx, 60, 140, 15, '#00ffff', '#0066ff');
-drawNeonBall(iconCtx, 140, 140, 15, '#00ffff', '#0066ff');
+// Smaller balls (scaled up)
+drawNeonBall(iconCtx, 310, 720, 75, '#00ffff', '#0066ff');
+drawNeonBall(iconCtx, 714, 720, 75, '#00ffff', '#0066ff');
 
-// Title
+// Title (scaled up)
 iconCtx.fillStyle = '#00ffff';
-iconCtx.font = 'bold 24px Courier New';
+iconCtx.font = 'bold 120px Courier New';
 iconCtx.textAlign = 'center';
 iconCtx.shadowColor = '#00ffff';
-iconCtx.shadowBlur = 10;
-iconCtx.fillText('BALL', 100, 45);
-iconCtx.fillText('RUN', 100, 70);
+iconCtx.shadowBlur = 50;
+iconCtx.fillText('BALL', 512, 230);
+iconCtx.fillText('RUN', 512, 360);
 iconCtx.shadowBlur = 0;
 
 // Save icon.png
 const iconBuffer = iconCanvas.toBuffer('image/png');
 fs.writeFileSync('icon.png', iconBuffer);
-console.log('✓ icon.png created');
+console.log('✓ icon.png created (1024x1024)');
 
-// Generate preview.png (600x400)
-const previewCanvas = createCanvas(600, 400);
+// Generate preview.png (1200x630 for Base cover photo requirements)
+const previewCanvas = createCanvas(1200, 630);
 const previewCtx = previewCanvas.getContext('2d');
 
-// Background
+// Background (no transparency)
 previewCtx.fillStyle = '#0a0a12';
-previewCtx.fillRect(0, 0, 600, 400);
+previewCtx.fillRect(0, 0, 1200, 630);
 
-// Grid
+// Grid (scaled)
 previewCtx.strokeStyle = 'rgba(0, 255, 255, 0.1)';
-previewCtx.lineWidth = 1;
-for (let y = 0; y < 400; y += 30) {
+previewCtx.lineWidth = 2;
+for (let y = 0; y < 630; y += 50) {
     previewCtx.beginPath();
     previewCtx.moveTo(0, y);
-    previewCtx.lineTo(600, y);
+    previewCtx.lineTo(1200, y);
     previewCtx.stroke();
 }
-for (let x = 0; x < 600; x += 30) {
+for (let x = 0; x < 1200; x += 50) {
     previewCtx.beginPath();
     previewCtx.moveTo(x, 0);
-    previewCtx.lineTo(x, 400);
+    previewCtx.lineTo(x, 630);
     previewCtx.stroke();
 }
 
-// Side borders
-const previewGradient = previewCtx.createLinearGradient(0, 0, 0, 400);
+// Side borders (scaled)
+const previewGradient = previewCtx.createLinearGradient(0, 0, 0, 630);
 previewGradient.addColorStop(0, '#00ffff');
 previewGradient.addColorStop(1, '#bf00ff');
 previewCtx.strokeStyle = previewGradient;
-previewCtx.lineWidth = 4;
+previewCtx.lineWidth = 8;
 previewCtx.beginPath();
-previewCtx.moveTo(2, 0);
-previewCtx.lineTo(2, 400);
+previewCtx.moveTo(4, 0);
+previewCtx.lineTo(4, 630);
 previewCtx.stroke();
 previewCtx.beginPath();
-previewCtx.moveTo(598, 0);
-previewCtx.lineTo(598, 400);
+previewCtx.moveTo(1196, 0);
+previewCtx.lineTo(1196, 630);
 previewCtx.stroke();
 
-// Gates
+// Gates (scaled)
 // Left gate
 previewCtx.fillStyle = 'rgba(10, 10, 20, 0.8)';
-previewCtx.fillRect(20, 80, 270, 70);
+previewCtx.fillRect(40, 150, 540, 140);
 previewCtx.strokeStyle = '#00ff88';
-previewCtx.lineWidth = 3;
-previewCtx.strokeRect(20, 80, 270, 70);
+previewCtx.lineWidth = 6;
+previewCtx.strokeRect(40, 150, 540, 140);
 previewCtx.fillStyle = '#00ff88';
-previewCtx.font = 'bold 32px Courier New';
+previewCtx.font = 'bold 64px Courier New';
 previewCtx.textAlign = 'center';
 previewCtx.shadowColor = '#00ff88';
-previewCtx.shadowBlur = 15;
-previewCtx.fillText('+5', 155, 125);
+previewCtx.shadowBlur = 30;
+previewCtx.fillText('+5', 310, 250);
+previewCtx.shadowBlur = 0;
 
 // Right gate
 previewCtx.fillStyle = 'rgba(10, 10, 20, 0.8)';
-previewCtx.fillRect(310, 80, 270, 70);
+previewCtx.fillRect(620, 150, 540, 140);
 previewCtx.strokeStyle = '#00ffff';
-previewCtx.lineWidth = 3;
-previewCtx.strokeRect(310, 80, 270, 70);
+previewCtx.lineWidth = 6;
+previewCtx.strokeRect(620, 150, 540, 140);
 previewCtx.fillStyle = '#00ffff';
 previewCtx.shadowColor = '#00ffff';
-previewCtx.fillText('x2', 445, 125);
+previewCtx.fillText('x2', 890, 250);
 previewCtx.shadowBlur = 0;
 
 // Divider
 previewCtx.fillStyle = '#bf00ff';
 previewCtx.shadowColor = '#bf00ff';
-previewCtx.shadowBlur = 15;
-previewCtx.fillRect(298, 80, 4, 70);
+previewCtx.shadowBlur = 30;
+previewCtx.fillRect(596, 150, 8, 140);
 previewCtx.shadowBlur = 0;
 
-// Player balls
-drawNeonBall(previewCtx, 300, 300, 25, '#00ffff', '#0066ff');
-drawNeonBall(previewCtx, 255, 320, 18, '#00ffff', '#0066ff');
-drawNeonBall(previewCtx, 345, 320, 18, '#00ffff', '#0066ff');
-drawNeonBall(previewCtx, 230, 345, 14, '#00ffff', '#0066ff');
-drawNeonBall(previewCtx, 280, 345, 14, '#00ffff', '#0066ff');
-drawNeonBall(previewCtx, 320, 345, 14, '#00ffff', '#0066ff');
-drawNeonBall(previewCtx, 370, 345, 14, '#00ffff', '#0066ff');
+// Player balls (scaled)
+drawNeonBall(previewCtx, 600, 500, 50, '#00ffff', '#0066ff');
+drawNeonBall(previewCtx, 510, 540, 36, '#00ffff', '#0066ff');
+drawNeonBall(previewCtx, 690, 540, 36, '#00ffff', '#0066ff');
+drawNeonBall(previewCtx, 460, 570, 28, '#00ffff', '#0066ff');
+drawNeonBall(previewCtx, 560, 570, 28, '#00ffff', '#0066ff');
+drawNeonBall(previewCtx, 640, 570, 28, '#00ffff', '#0066ff');
+drawNeonBall(previewCtx, 740, 570, 28, '#00ffff', '#0066ff');
 
-// Title
+// Title (scaled)
 previewCtx.fillStyle = '#00ffff';
-previewCtx.font = 'bold 36px Courier New';
+previewCtx.font = 'bold 72px Courier New';
 previewCtx.textAlign = 'center';
 previewCtx.shadowColor = '#00ffff';
-previewCtx.shadowBlur = 20;
-previewCtx.fillText('BALL RUN', 300, 40);
+previewCtx.shadowBlur = 40;
+previewCtx.fillText('BALL RUN', 600, 80);
 previewCtx.shadowBlur = 0;
 
-// Subtitle
+// Subtitle (scaled)
 previewCtx.fillStyle = '#bf00ff';
-previewCtx.font = '16px Courier New';
+previewCtx.font = '32px Courier New';
 previewCtx.shadowColor = '#bf00ff';
-previewCtx.shadowBlur = 10;
-previewCtx.fillText('Swipe to choose gates • Survive the boss!', 300, 385);
+previewCtx.shadowBlur = 20;
+previewCtx.fillText('Swipe to choose gates • Survive the boss!', 600, 600);
 previewCtx.shadowBlur = 0;
 
 // Save preview.png
 const previewBuffer = previewCanvas.toBuffer('image/png');
 fs.writeFileSync('preview.png', previewBuffer);
-console.log('✓ preview.png created');
+console.log('✓ preview.png created (1200x630)');
 console.log('\nAll icons generated successfully!');
-
+console.log('\nNote: Screenshots (1284x2778) need to be created manually or via browser automation.');
