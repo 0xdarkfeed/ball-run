@@ -733,36 +733,45 @@ function drawSkillPopup() {
     if (Date.now() < skillPopup.time) {
         const progress = (skillPopup.time - Date.now()) / 1200;
         const scale = 1 + (1 - progress) * 0.3;
-        const yPos = canvasHeight * 0.28; // Moved up to avoid boss name and health bar
+        const yPos = canvasHeight / 2; // Screen center
         
         ctx.save();
         
-        // Background glow (smaller)
-        ctx.globalAlpha = progress * 0.2;
-        const gradient = ctx.createRadialGradient(canvasWidth / 2, yPos, 0, canvasWidth / 2, yPos, 120);
+        // Dark background for better visibility
+        ctx.globalAlpha = progress * 0.4;
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        ctx.fillRect(canvasWidth / 2 - 150, yPos - 25, 300, 50);
+        
+        // Background glow
+        ctx.globalAlpha = progress * 0.3;
+        const gradient = ctx.createRadialGradient(canvasWidth / 2, yPos, 0, canvasWidth / 2, yPos, 140);
         gradient.addColorStop(0, skillPopup.color);
         gradient.addColorStop(1, 'transparent');
         ctx.fillStyle = gradient;
         ctx.beginPath();
-        ctx.arc(canvasWidth / 2, yPos, 120, 0, Math.PI * 2);
+        ctx.arc(canvasWidth / 2, yPos, 140, 0, Math.PI * 2);
         ctx.fill();
         
-        // Main text (smaller and shorter duration)
+        // Main text with stronger outline for visibility
         ctx.globalAlpha = progress;
         ctx.fillStyle = skillPopup.color;
         ctx.font = `bold ${24 * scale}px Arial`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.shadowColor = skillPopup.color;
-        ctx.shadowBlur = 30;
+        ctx.shadowBlur = 35;
+        
+        // Strong black outline
         ctx.strokeStyle = '#000000';
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 4;
         ctx.strokeText(skillPopup.text, canvasWidth / 2, yPos);
+        
+        // Main text
         ctx.fillText(skillPopup.text, canvasWidth / 2, yPos);
         
-        // Outer glow (smaller)
-        ctx.shadowBlur = 50;
-        ctx.globalAlpha = progress * 0.4;
+        // Outer glow
+        ctx.shadowBlur = 60;
+        ctx.globalAlpha = progress * 0.5;
         ctx.fillText(skillPopup.text, canvasWidth / 2, yPos);
         
         ctx.restore();
