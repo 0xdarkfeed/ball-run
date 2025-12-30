@@ -15,14 +15,6 @@ const bossAlertEl = document.getElementById('bossAlert');
 const bossEmojiEl = document.getElementById('bossEmoji');
 const onboardingEl = document.getElementById('onboarding');
 const startGameBtn = document.getElementById('startGameBtn');
-const leaderboardEl = document.getElementById('leaderboard');
-const leaderboardListEl = document.getElementById('leaderboardList');
-const leaderboardLoadingEl = document.getElementById('leaderboardLoading');
-const closeLeaderboardBtn = document.getElementById('closeLeaderboard');
-
-// Leaderboard contract address (set after deployment)
-// TODO: Replace with your deployed contract address
-const LEADERBOARD_CONTRACT = ''; // Example: '0x1234...'
 const API_BASE_URL = window.location.origin;
 
 const MAX_VISUAL_BALLS = 40;
@@ -1409,9 +1401,17 @@ startGameBtn.addEventListener('click', () => {
 });
 
 shareBtn.addEventListener('click', async () => {
-    const text = gameState.bossNumber >= FINAL_BOSS_NUMBER 
-        ? `🏆 Ball Run VICTORY!\n\nFully evolved with ${gameState.ballTraits.length} traits!\n\nCan you evolve too?`
-        : `🎮 Ball Run!\n\nLevel ${gameState.level} | ${gameState.bossNumber} Bosses | ${gameState.ballTraits.length} traits\n\nBeat me!`;
+    const gameUrl = 'https://farcaster.xyz/miniapps/x4TQ-RSCG4TF/ball-run';
+    
+    // Calculate score: level * 100 + balls + bosses * 50
+    const score = gameState.level * 100 + gameState.balls + gameState.bossNumber * 50;
+    
+    let text;
+    if (gameState.bossNumber >= FINAL_BOSS_NUMBER) {
+        text = `🏆 Ball Run'da tam zafer! 🎉\n\n✨ Level ${gameState.level}'e kadar geldim!\n🔵 ${gameState.balls} top topladım\n👹 ${gameState.bossNumber} boss yendim\n💎 ${gameState.ballTraits.length} özellik kazandım\n\n📊 Puanım: ${score} 🎯\n\n🎮 Hadi sen de oyna! 👇\n${gameUrl}`;
+    } else {
+        text = `🎮 Ball Run'da oynuyorum! 🔥\n\n✨ Level ${gameState.level}'e kadar geldim!\n🔵 ${gameState.balls} top topladım\n👹 ${gameState.bossNumber} boss yendim\n💎 ${gameState.ballTraits.length} özellik kazandım\n\n📊 Puanım: ${score} 🎯\n\n🎮 Hadi sen de oyna! 👇\n${gameUrl}`;
+    }
     
     try {
         // Try Farcaster SDK first
@@ -1450,133 +1450,6 @@ shareBtn.addEventListener('click', async () => {
     }
 });
 
-// Leaderboard functions
-async function submitScoreToBlockchain() {
-    if (!LEADERBOARD_CONTRACT) {
-        console.log('Leaderboard contract not configured');
-        return;
-    }
-
-    try {
-        // Get user's wallet address from Base App context
-        const userAddress = await getBaseAccountAddress();
-        
-        if (!userAddress) {
-            console.log('No wallet address available');
-            return;
-        }
-
-        const response = await fetch(`${API_BASE_URL}/api/submit-score`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                playerAddress: userAddress,
-                level: gameState.level,
-                balls: gameState.balls,
-                bosses: gameState.bossNumber,
-                contractAddress: LEADERBOARD_CONTRACT,
-            }),
-        });
-
-        const result = await response.json();
-        
-        if (result.success) {
-            console.log('Score submitted:', result.transactionHash);
-            // Show success message
-            showNotification('Score saved to blockchain! 🎉', 'success');
-        } else {
-            console.error('Failed to submit score:', result.error);
-            showNotification('Failed to save score', 'error');
-        }
-    } catch (error) {
-        console.error('Error submitting score:', error);
-        showNotification('Error saving score', 'error');
-    }
-}
-
-async function getBaseAccountAddress() {
-    try {
-        // Try to get address from Base App context
-        if (window.ethereum) {
-            const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-            if (accounts && accounts.length > 0) {
-                return accounts[0];
-            }
-        }
-        
-        // Try Farcaster SDK
-        if (sdk && sdk.context) {
-            const context = await sdk.context;
-            if (context && context.connectedAddress) {
-                return context.connectedAddress;
-            }
-        }
-        
-        return null;
-    } catch (error) {
-        console.error('Error getting address:', error);
-        return null;
-    }
-}
-
-async function loadLeaderboard() {
-    if (!LEADERBOARD_CONTRACT) {
-        leaderboardListEl.innerHTML = '<p style="color: #ff0066; text-align: center;">Leaderboard contract not configured</p>';
-        leaderboardLoadingEl.classList.add('hidden');
-        return;
-    }
-
-    leaderboardLoadingEl.classList.remove('hidden');
-    leaderboardListEl.innerHTML = '';
-
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/get-leaderboard?contractAddress=${LEADERBOARD_CONTRACT}&count=20`);
-        const result = await response.json();
-
-        leaderboardLoadingEl.classList.add('hidden');
-
-        if (result.success && result.scores && result.scores.length > 0) {
-            result.scores.forEach((score, index) => {
-                const item = document.createElement('div');
-                item.className = `leaderboard-item rank-${index < 3 ? index + 1 : ''}`;
-                
-                const shortAddress = `${score.player.slice(0, 6)}...${score.player.slice(-4)}`;
-                
-                item.innerHTML = `
-                    <div class="leaderboard-rank">#${score.rank}</div>
-                    <div class="leaderboard-info">
-                        <div class="leaderboard-player">${shortAddress}</div>
-                        <div class="leaderboard-stats">
-                            <span>Level: ${score.level}</span>
-                            <span>Balls: ${score.balls}</span>
-                            <span>Bosses: ${score.bosses}</span>
-                        </div>
-                    </div>
-                `;
-                
-                leaderboardListEl.appendChild(item);
-            });
-        } else {
-            leaderboardListEl.innerHTML = '<p style="color: #cccccc; text-align: center;">No scores yet. Be the first!</p>';
-        }
-    } catch (error) {
-        console.error('Error loading leaderboard:', error);
-        leaderboardLoadingEl.classList.add('hidden');
-        leaderboardListEl.innerHTML = '<p style="color: #ff0066; text-align: center;">Error loading leaderboard</p>';
-    }
-}
-
-function showLeaderboard() {
-    leaderboardEl.classList.remove('hidden');
-    loadLeaderboard();
-}
-
-function hideLeaderboard() {
-    leaderboardEl.classList.add('hidden');
-}
-
 function showNotification(message, type = 'info') {
     // Simple notification (can be enhanced)
     const notification = document.createElement('div');
@@ -1598,16 +1471,6 @@ function showNotification(message, type = 'info') {
     setTimeout(() => {
         notification.remove();
     }, 3000);
-}
-
-// Leaderboard button event listener
-const leaderboardBtn = document.getElementById('leaderboardBtn');
-if (leaderboardBtn) {
-    leaderboardBtn.addEventListener('click', showLeaderboard);
-}
-
-if (closeLeaderboardBtn) {
-    closeLeaderboardBtn.addEventListener('click', hideLeaderboard);
 }
 
 // Show onboarding on first load
